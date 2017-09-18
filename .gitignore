@@ -1,0 +1,4 @@
+*.d
+*.o
+abc
+arch_flags
