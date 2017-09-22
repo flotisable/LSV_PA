@@ -2,3 +2,5 @@
 *.o
 abc
 arch_flags
+tags
+*.vim

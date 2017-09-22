@@ -80,11 +80,61 @@ Lsv_End( Abc_Frame_t * pAbc )
 int
 Abc_CommandMajFind( Abc_Frame_t * pAbc , int argc , char ** argv )
 {
-   // TODO:
-   // step.1: get the current network
-   // step.2: check whether the current network is strashed
-   // step.3: call Lsv_NtkMajFind() to report MAJ gates
-   return 0;
+  // TODO:
+  // step.1: get the current network
+  // step.2: check whether the current network is strashed
+  // step.3: call Lsv_NtkMajFind() to report MAJ gates
+
+  // variable declaration
+  char      c;
+  Abc_Ntk_t *pNtk;
+  // end variable declaration
+
+  // process arguments
+  Extra_UtilGetoptReset();
+  while( ( c = Extra_UtilGetopt( argc, argv, "h" ) ) != EOF )
+  {
+    switch( c )
+    {
+      case 'h': goto usage;
+      default:  goto usage;
+    }
+  }
+  // end process arguments
+
+  // get the current network
+  pNtk = Abc_FrameReadNtk( pAbc );
+
+  if( !pNtk )
+  {
+    Abc_Print( ABC_ERROR, "Empty network.\n" );
+    return 1;
+  }
+  // end get the current network
+
+  // check whether the current network is strashed
+  if( !Abc_NtkIsStrash( pNtk ) )
+  {
+    const int fAllNodes = 0;
+    const int fCleanup  = 1;
+    const int fRecord   = 0;
+
+    pNtk = Abc_NtkStrash( pNtk, fAllNodes, fCleanup, fRecord );
+
+    Lsv_NtkMajFind( pNtk );
+    Abc_NtkDelete( pNtk );
+  }
+  else
+    Lsv_NtkMajFind( pNtk );
+  // end check whether the current network is strashed
+  return 0;
+
+usage:
+
+  Abc_Print( ABC_PROMPT, "usage: MAJ_find [-h]\n" );
+  Abc_Print( ABC_PROMPT, "\t        prints the MAJ in network and the number of found MAJ \n" );
+  Abc_Print( ABC_PROMPT, "\t-h    : print the command usage\n");
+  return 1;
 }
 
 ////////////////////////////////////////////////////////////////////////
