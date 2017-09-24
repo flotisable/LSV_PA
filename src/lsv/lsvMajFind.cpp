@@ -66,9 +66,95 @@ Lsv_NtkMajFind( Abc_Ntk_t * pNtk )
   // end find MAJ and print
 }
 
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+
 bool isMaj( Abc_Obj_t *pObj )
 {
+  // variable declaration
+  const int inSize = 3;
+
+  Vec_Ptr_t *pInputs  = Vec_PtrAlloc( inSize + 1 );
+  Abc_Obj_t *pNode    = pObj;
+  Abc_Obj_t *pParent;
+  int       i;
+  // end variable declaration
+
+  // first level
+  if( Abc_ObjIsPi( pNode ) || Abc_ObjIsPo( pNode ) ) goto notMaj;
+
+  pParent = Abc_ObjFanout0( pNode );
+
+  if( !(  ( Abc_ObjFanin0( pParent ) == pNode && Abc_ObjFaninC0( pParent ) ) ||
+          ( Abc_ObjFanin1( pParent ) == pNode && Abc_ObjFaninC1( pParent ) ) ) ) goto notMaj;
+  if( Abc_ObjFaninC0( pNode ) == Abc_ObjFaninC1( pNode ) ) goto notMaj;
+  // end first level
+
+  // second level
+  pParent = pNode;
+  pNode   = ( Abc_ObjFaninC0( pParent ) ) ? Abc_ObjFanin0( pParent ) : Abc_ObjFanin1( pParent );
+
+  if( Abc_ObjIsPi( pNode ) ) goto notMaj;
+
+  Vec_PtrPush( pInputs, Abc_ObjChild0( pNode ) );
+  Vec_PtrPush( pInputs, Abc_ObjChild1( pNode ) );
+
+  pNode = ( Abc_ObjFaninC0( pParent ) ) ? Abc_ObjFanin1( pParent ) : Abc_ObjFanin0( pParent );
+
+  if( Abc_ObjIsPi( pNode ) ) goto notMaj;
+  if( Abc_ObjFaninC0( pNode ) != Abc_ObjFaninC1( pNode ) || !Abc_ObjFaninC0( pNode ) ) goto notMaj; 
+  // end second level
+
+  // third level
+  pParent = pNode;
+  pNode   = Abc_ObjFanin0( pParent );
+
+  if( Abc_ObjIsPi( pNode ) ) goto notMaj;
+
+  Vec_PtrPushUnique( pInputs, Abc_ObjChild0( pNode ) );
+  Vec_PtrPushUnique( pInputs, Abc_ObjChild1( pNode ) );
+
+  if( Vec_PtrSize( pInputs ) > inSize ) goto notMaj;
+
+  pNode = Abc_ObjFanin1( pParent );
+
+  if( Abc_ObjIsPi( pNode ) ) goto notMaj;
+
+  Vec_PtrPushUnique( pInputs, Abc_ObjChild0( pNode ) );
+  Vec_PtrPushUnique( pInputs, Abc_ObjChild1( pNode ) );
+
+  if( Vec_PtrSize( pInputs ) > inSize ) goto notMaj;
+  // end third level
+
+  // print MAJ
+  Abc_Print( ABC_STANDARD, "%i = MAJ( ", Abc_ObjId( pObj ) );
+
+  Vec_PtrForEachEntry( Abc_Obj_t*, pInputs, pNode, i )
+  {
+    if( Abc_ObjIsComplement( pNode ) ) Abc_Print( ABC_STANDARD, "-" );
+    Abc_Print( ABC_STANDARD, "%i", Abc_ObjId( Abc_ObjRegular( pNode ) ) );
+
+    if( i == Vec_PtrSize( pInputs ) - 1 ) Abc_Print( ABC_STANDARD, " )\n" );
+    else                                  Abc_Print( ABC_STANDARD, ", " );
+  }
+  // end print MAJ
+
+  Vec_PtrFree( pInputs );
   return true;
+
+notMaj:
+
+  Vec_PtrFree( pInputs );
+  return false;
 }
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
