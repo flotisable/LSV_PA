@@ -1,0 +1,23 @@
+#!/Users/flotisable/Documents/Course/LogicSynthesisAndVerification/LSV_pa/abc -F
+
+read /Users/flotisable/Documents/Course/LogicSynthesisAndVerification/LSV_pa/PA1_testcase/maj.v
+strash
+MAJ_find
+
+read /Users/flotisable/Documents/Course/LogicSynthesisAndVerification/LSV_pa/PA1_testcase/c880.blif
+strash
+MAJ_find
+
+read /Users/flotisable/Documents/Course/LogicSynthesisAndVerification/LSV_pa/PA1_testcase/c5315.blif
+strash
+MAJ_find
+
+read /Users/flotisable/Documents/Course/LogicSynthesisAndVerification/LSV_pa/PA1_testcase/c6288.blif
+strash
+MAJ_find
+
+read /Users/flotisable/Documents/Course/LogicSynthesisAndVerification/LSV_pa/PA1_testcase/c7552.blif
+strash
+MAJ_find
+
+quit
