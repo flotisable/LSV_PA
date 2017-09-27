@@ -94,8 +94,8 @@ bool isMaj( Abc_Obj_t *pObj )
 
   pParent = Abc_ObjFanout0( pNode );
 
-  if( !(  ( Abc_ObjFanin0( pParent ) == pNode && Abc_ObjFaninC0( pParent ) ) ||
-          ( Abc_ObjFanin1( pParent ) == pNode && Abc_ObjFaninC1( pParent ) ) ) ) goto notMaj;
+  //if( !(  ( Abc_ObjFanin0( pParent ) == pNode && Abc_ObjFaninC0( pParent ) ) ||
+  //        ( Abc_ObjFanin1( pParent ) == pNode && Abc_ObjFaninC1( pParent ) ) ) ) goto notMaj;
   if( Abc_ObjFaninC0( pNode ) == Abc_ObjFaninC1( pNode ) ) goto notMaj;
   // end first level
 
