@@ -138,7 +138,7 @@ bool isMaj( Abc_Obj_t *pObj )
   // print MAJ
 maj:
 
-  Abc_Print( ABC_STANDARD, "%i = MAJ( ", Abc_ObjId( pObj ) );
+  Abc_Print( ABC_STANDARD, "-%i = MAJ( ", Abc_ObjId( pObj ) );
 
   Vec_PtrForEachEntry( Abc_Obj_t*, pInputs, pNode, i )
   {
