@@ -28,7 +28,10 @@ ABC_NAMESPACE_IMPL_START
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
 
-bool isMaj( Abc_Obj_t *pObj );
+bool isMaj  ( Abc_Obj_t *pObj );
+
+void processLeft  ( Abc_Obj_t *pObj, Vec_Ptr_t *pInputs, Abc_Obj_t *thirdLevelNode );
+void processRight ( Abc_Obj_t *pObj, Vec_Ptr_t *pInputs );
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
 ////////////////////////////////////////////////////////////////////////
@@ -83,60 +86,59 @@ bool isMaj( Abc_Obj_t *pObj )
   // variable declaration
   const int inSize = 3;
 
-  Vec_Ptr_t *pInputs  = Vec_PtrAlloc( inSize + 1 );
-  Abc_Obj_t *pNode    = pObj;
-  Abc_Obj_t *pParent;
+  Vec_Ptr_t *pInputs          = Vec_PtrAlloc( inSize + 1 );
+  Vec_Ptr_t *pThirdLevelNodes = Vec_PtrAlloc( 4 );
+  Abc_Obj_t *pNode            = pObj;
+  Abc_Obj_t *pFanin0;
+  Abc_Obj_t *pFanin1;
   int       i;
   // end variable declaration
 
   // first level
-  if( Abc_ObjIsPi( pNode ) || Abc_ObjIsPo( pNode ) ) goto notMaj;
-
-  pParent = Abc_ObjFanout0( pNode );
-
-  //if( !(  ( Abc_ObjFanin0( pParent ) == pNode && Abc_ObjFaninC0( pParent ) ) ||
-  //        ( Abc_ObjFanin1( pParent ) == pNode && Abc_ObjFaninC1( pParent ) ) ) ) goto notMaj;
-  if( Abc_ObjFaninC0( pNode ) == Abc_ObjFaninC1( pNode ) ) goto notMaj;
+  if( !Abc_ObjFaninC0( pNode ) || !Abc_ObjFaninC1( pNode ) ) goto notMaj;
   // end first level
 
   // second level
-  pParent = pNode;
-  pNode   = ( Abc_ObjFaninC0( pParent ) ) ? Abc_ObjFanin0( pParent ) : Abc_ObjFanin1( pParent );
+  pFanin0 = Abc_ObjFanin0( pNode );
+  pFanin1 = Abc_ObjFanin1( pNode );
 
-  if( Abc_ObjIsPi( pNode ) ) goto notMaj;
+  if( Abc_ObjIsPi( pFanin0 ) || Abc_ObjIsPi( pFanin1 ) ) goto notMaj;
 
-  Vec_PtrPush( pInputs, Abc_ObjChild0( pNode ) );
-  Vec_PtrPush( pInputs, Abc_ObjChild1( pNode ) );
-
-  pNode = ( Abc_ObjFaninC0( pParent ) ) ? Abc_ObjFanin1( pParent ) : Abc_ObjFanin0( pParent );
-
-  if( Abc_ObjIsPi( pNode ) ) goto notMaj;
-  if( Abc_ObjFaninC0( pNode ) != Abc_ObjFaninC1( pNode ) || !Abc_ObjFaninC0( pNode ) ) goto notMaj; 
+  if( Abc_ObjFaninC0( pFanin0 ) ) Vec_PtrPush( pThirdLevelNodes, Abc_ObjFanin0( pFanin0 ) );
+  if( Abc_ObjFaninC1( pFanin0 ) ) Vec_PtrPush( pThirdLevelNodes, Abc_ObjFanin1( pFanin0 ) );
+  if( Abc_ObjFaninC0( pFanin1 ) ) Vec_PtrPush( pThirdLevelNodes, Abc_ObjFanin0( pFanin1 ) );
+  if( Abc_ObjFaninC1( pFanin1 ) ) Vec_PtrPush( pThirdLevelNodes, Abc_ObjFanin1( pFanin1 ) );
   // end second level
 
   // third level
-  pParent = pNode;
-  pNode   = Abc_ObjFanin0( pParent );
+  Vec_PtrForEachEntry( Abc_Obj_t*, pThirdLevelNodes, pNode, i )
+  {
+    if( Abc_ObjIsPi( pNode ) ) continue;
 
-  if( Abc_ObjIsPi( pNode ) ) goto notMaj;
+    Vec_PtrClear( pInputs );
 
-  Vec_PtrPushUnique( pInputs, Abc_ObjChild0( pNode ) );
-  Vec_PtrPushUnique( pInputs, Abc_ObjChild1( pNode ) );
+    if( pNode == Abc_ObjFanin0( pFanin0 ) || pNode == Abc_ObjFanin1( pFanin0 ) )
+    {
+      processLeft ( pFanin0, pInputs, pNode );
+      processRight( pFanin1, pInputs );
+    }
+    else
+    {
+      processLeft ( pFanin1, pInputs, pNode );
+      processRight( pFanin0, pInputs );
+    }
 
-  if( Vec_PtrSize( pInputs ) > inSize ) goto notMaj;
-
-  pNode = Abc_ObjFanin1( pParent );
-
-  if( Abc_ObjIsPi( pNode ) ) goto notMaj;
-
-  Vec_PtrPushUnique( pInputs, Abc_ObjChild0( pNode ) );
-  Vec_PtrPushUnique( pInputs, Abc_ObjChild1( pNode ) );
-
-  if( Vec_PtrSize( pInputs ) > inSize ) goto notMaj;
+    if( Vec_PtrFind( pInputs, Abc_ObjNot( Abc_ObjChild0( pNode ) ) ) == -1 ) continue;
+    if( Vec_PtrFind( pInputs, Abc_ObjNot( Abc_ObjChild1( pNode ) ) ) == -1 ) continue;
+    goto maj;
+  }
+  goto notMaj;
   // end third level
 
   // print MAJ
-  Abc_Print( ABC_STANDARD, "%i = MAJ( ", Abc_ObjId( pObj ) );
+maj:
+
+  Abc_Print( ABC_STANDARD, "-%i = MAJ( ", Abc_ObjId( pObj ) );
 
   Vec_PtrForEachEntry( Abc_Obj_t*, pInputs, pNode, i )
   {
@@ -148,13 +150,29 @@ bool isMaj( Abc_Obj_t *pObj )
   }
   // end print MAJ
 
+  // release memory
   Vec_PtrFree( pInputs );
+  Vec_PtrFree( pThirdLevelNodes );
+  // end release memory
   return true;
 
 notMaj:
 
   Vec_PtrFree( pInputs );
+  Vec_PtrFree( pThirdLevelNodes );
   return false;
+}
+
+void processLeft( Abc_Obj_t *pObj, Vec_Ptr_t *pInputs, Abc_Obj_t *thirdLevelNode )
+{
+  if( Abc_ObjFanin0( pObj ) == thirdLevelNode ) Vec_PtrPush( pInputs, Abc_ObjChild1( pObj ) );
+  else                                          Vec_PtrPush( pInputs, Abc_ObjChild0( pObj ) );
+}
+
+void processRight( Abc_Obj_t *pObj, Vec_Ptr_t *pInputs )
+{
+  Vec_PtrPush( pInputs, Abc_ObjChild0( pObj ) );
+  Vec_PtrPush( pInputs, Abc_ObjChild1( pObj ) );
 }
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
