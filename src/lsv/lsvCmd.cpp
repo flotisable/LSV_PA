@@ -34,6 +34,7 @@ extern "C" void Lsv_End  ( Abc_Frame_t * );
 
 // command functions
 static int Abc_CommandMajFind( Abc_Frame_t * , int , char ** );
+static int Abc_Command1SubFind( Abc_Frame_t * , int , char ** );
 
 // external functions defined in lsv package
 extern void Lsv_NtkMajFind( Abc_Ntk_t * );
@@ -58,6 +59,7 @@ void
 Lsv_Init( Abc_Frame_t * pAbc )
 {
    Cmd_CommandAdd( pAbc, "z LSV", "MAJ_find" , Abc_CommandMajFind , 0 );
+   Cmd_CommandAdd( pAbc, "z LSV", "1subfind" , Abc_Command1SubFind , 0 );
 }
 
 void
@@ -134,6 +136,27 @@ usage:
   Abc_Print( ABC_PROMPT, "usage: MAJ_find [-h]\n" );
   Abc_Print( ABC_PROMPT, "\t        prints the MAJ in network and the number of found MAJ \n" );
   Abc_Print( ABC_PROMPT, "\t-h    : print the command usage\n");
+  return 1;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+
+int 
+Abc_Command1SubFind( Abc_Frame_t *pAbc, int argc, char ** argv )
+{
+  return 0;
+
+usage:
   return 1;
 }
 
