@@ -37,7 +37,8 @@ static int Abc_CommandMajFind( Abc_Frame_t * , int , char ** );
 static int Abc_Command1SubFind( Abc_Frame_t * , int , char ** );
 
 // external functions defined in lsv package
-extern void Lsv_NtkMajFind( Abc_Ntk_t * );
+extern void Lsv_NtkMajFind  ( Abc_Ntk_t * );
+extern void Lsv_Ntk1SubFind ( Abc_Ntk_t * );
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
@@ -154,9 +155,55 @@ usage:
 int 
 Abc_Command1SubFind( Abc_Frame_t *pAbc, int argc, char ** argv )
 {
+  // variable declaration
+  char      c;
+  Abc_Ntk_t *pNtk;
+  // end variable declaration
+
+  // process arguments
+  Extra_UtilGetoptReset();
+  while( ( c = Extra_UtilGetopt( argc, argv, "h" ) ) != EOF )
+  {
+    switch( c )
+    {
+      case 'h': goto usage;
+      default:  goto usage;
+    }
+  }
+  // end process arguments
+
+  // get the current network
+  pNtk = Abc_FrameReadNtk( pAbc );
+
+  if( !pNtk )
+  {
+    Abc_Print( ABC_ERROR, "Empty network.\n" );
+    return 1;
+  }
+  // end get the current network
+
+  // check whether the current network is strashed
+  if( !Abc_NtkIsStrash( pNtk ) )
+  {
+    const int fAllNodes = 0;
+    const int fCleanup  = 1;
+    const int fRecord   = 0;
+
+    pNtk = Abc_NtkStrash( pNtk, fAllNodes, fCleanup, fRecord );
+
+    Lsv_Ntk1SubFind( pNtk );
+    Abc_NtkDelete( pNtk );
+  }
+  else
+    Lsv_Ntk1SubFind( pNtk );
+  // end check whether the current network is strashed
   return 0;
 
 usage:
+
+  Abc_Print( ABC_PROMPT, "usage: 1subfind [-h]\n" );
+  Abc_Print( ABC_PROMPT, "\t        prints all 1-input resubstitution candidates for each node in the circuit\n" );
+  Abc_Print( ABC_PROMPT, "\t-h    : print the command usage\n");
   return 1;
 }
 
