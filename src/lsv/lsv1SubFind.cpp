@@ -67,8 +67,6 @@ Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
 
   Cnf_DataLift( pCnf2, pCnf1->nVars );
 
-  
-
   // release memory
   sat_solver_delete( pSat );
   ABC_FREE( pCnf1 );
@@ -77,6 +75,28 @@ Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
   Aig_ManStop( pMan2 );
   Abc_NtkDelete( pNtk2 );
   // end release memory
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+
+int sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf )
+{
+  int success = 1;
+
+  for( int i = 0 ; i < pCnf->nClauses ; ++i )
+     success &= sat_solver_addclause( pSat, pCnf->pClauses[i], pCnf->pClauses[i+1] );
+
+  return success;
 }
 
 ////////////////////////////////////////////////////////////////////////
