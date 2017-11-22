@@ -56,10 +56,6 @@ Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
 {
   if( !pNtk ) return; // preconsition
 
-  // external function declaration
-  // extern "C" Aig_Man_t* Abc_NtkToDar( Abc_Ntk_t *pNtk, int fExors, int fRegisters );
-  // end external function declaration
-
   // variable declaration
   Abc_Ntk_t   *pNtk1  = pNtk;
   Abc_Ntk_t   *pNtk2  = Abc_NtkDup( pNtk );
@@ -109,14 +105,14 @@ Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
 
       // test for whether two node can have some value
       lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  0 );
-      lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 0 );
+      lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 1 );
 
       satResult = sat_solver_solve( pSat, lits, lits + 2, (ABC_INT64_T)0, (ABC_INT64_T)0, (ABC_INT64_T)0, (ABC_INT64_T)0 );
 
       if( satResult == l_False )
       {
         lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  1 );
-        lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 1 );
+        lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 0 );
 
         satResult = sat_solver_solve( pSat, lits, lits + 2, (ABC_INT64_T)0, (ABC_INT64_T)0, (ABC_INT64_T)0, (ABC_INT64_T)0 );
 
@@ -131,14 +127,14 @@ Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
 
       // test for whether two node can have complement value
       lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  0 );
-      lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 1 );
+      lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 0 );
 
       satResult = sat_solver_solve( pSat, lits, lits + 2, (ABC_INT64_T)0, (ABC_INT64_T)0, (ABC_INT64_T)0, (ABC_INT64_T)0 );
 
       if( satResult == l_False )
       {
         lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  1 );
-        lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 0 );
+        lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 1 );
 
         satResult = sat_solver_solve( pSat, lits, lits + 2, (ABC_INT64_T)0, (ABC_INT64_T)0, (ABC_INT64_T)0, (ABC_INT64_T)0 );
 
