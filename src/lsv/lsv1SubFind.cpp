@@ -63,9 +63,32 @@ Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
   Cnf_Dat_t   *pCnf1  = Cnf_DeriveSimple( pMan1, 0 );
   Cnf_Dat_t   *pCnf2  = Cnf_DeriveSimple( pMan2, 0 );
   sat_solver  *pSat   = sat_solver_new();
+  int         lits[3];
+  Aig_Obj_t   *pObj;
+  int         i;
   // end variable declaration
 
   Cnf_DataLift( pCnf2, pCnf1->nVars );
+
+  // add cnf clauses
+  sat_solver_add_cnf( pSat, pCnf1 );
+  sat_solver_add_cnf( pSat, pCnf2 );
+  // end add cnf clauses
+
+  // the output of two circuits should be equivalent
+  Aig_ManForEachCo( pMan1, pObj, i )
+  {
+    Aig_Obj_t *pObj2 = Aig_ManCo( pMan2, i );
+
+    lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  0 );
+    lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 1 );
+    sat_solver_addclause( pSat, lits, lits + 2 );
+
+    lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  1 );
+    lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 0 );
+    sat_solver_addclause( pSat, lits, lits + 2 );
+  }
+  // end the output of two circuits should be equivalent
 
   // release memory
   sat_solver_delete( pSat );
