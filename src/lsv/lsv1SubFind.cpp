@@ -33,7 +33,8 @@ ABC_NAMESPACE_IMPL_START
 extern "C" Aig_Man_t* Abc_NtkToDar( Abc_Ntk_t *pNtk, int fExors, int fRegisters );
 // end external function declaration
 
-int sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf );
+int   sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf );
+bool  is1SubCondidate( sat_solver *pSat, int variable1, int variable2, bool complement );
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
@@ -64,12 +65,10 @@ Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
   Cnf_Dat_t   *pCnf1  = Cnf_DeriveSimple( pMan1, 0 );
   Cnf_Dat_t   *pCnf2  = Cnf_DeriveSimple( pMan2, 0 );
   sat_solver  *pSat   = sat_solver_new();
-  int         lits[3];
   Aig_Obj_t   *pObj;
   Aig_Obj_t   *pObj2;
   int         i;
   int         j;
-  int         satResult;
   // end variable declaration
 
   Cnf_DataLift( pCnf2, pCnf1->nVars );
@@ -79,9 +78,28 @@ Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
   sat_solver_add_cnf( pSat, pCnf2 );
   // end add cnf clauses
 
+  // the input of two circuits should be equivalent
+  Aig_ManForEachCi( pMan1, pObj, i )
+  {
+    int lits[3];
+
+    pObj2 = Aig_ManCi( pMan2, i ); // get the corresponding Po in circuit 2
+
+    lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  0 );
+    lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 1 );
+    sat_solver_addclause( pSat, lits, lits + 2 );
+
+    lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  1 );
+    lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 0 );
+    sat_solver_addclause( pSat, lits, lits + 2 );
+  }
+  // end the input of two circuits should be equivalent
+
   // the output of two circuits should be equivalent
   Aig_ManForEachCo( pMan1, pObj, i )
   {
+    int lits[3];
+
     pObj2 = Aig_ManCo( pMan2, i ); // get the corresponding Po in circuit 2
 
     lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  0 );
@@ -103,46 +121,20 @@ Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
     {
       if( Aig_ObjIsCo( pObj2 ) || ( i == j ) ) continue;
 
-      // test for whether two node can have some value
-      lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  0 );
-      lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 1 );
-
-      satResult = sat_solver_solve( pSat, lits, lits + 2, (ABC_INT64_T)0, (ABC_INT64_T)0, (ABC_INT64_T)0, (ABC_INT64_T)0 );
-
-      if( satResult == l_False )
+      // test for whether two node can have same value
+      if( is1SubCondidate( pSat, pCnf1->pVarNums[Aig_ObjId( pObj )], pCnf2->pVarNums[Aig_ObjId( pObj2 )], false ) )
       {
-        lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  1 );
-        lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 0 );
-
-        satResult = sat_solver_solve( pSat, lits, lits + 2, (ABC_INT64_T)0, (ABC_INT64_T)0, (ABC_INT64_T)0, (ABC_INT64_T)0 );
-
-        if( satResult == l_False )
-        {
-          // pObj2 is a 1-input resubstitute candidate of pObj
-          Abc_Print( ABC_STANDARD, "%i is a 1-input resubstitute condidate of %i\n", Aig_ObjId( pObj2 ), Aig_ObjId( pObj ) );
-          continue;
-        }
+        // pObj2 is a 1-input resubstitute candidate of pObj
+        Abc_Print( ABC_STANDARD, "%i is a 1-input resubstitute condidate of %i\n", Aig_ObjId( pObj2 ), Aig_ObjId( pObj ) );
+        continue;
       }
-      // end test for whether two node can have some value
+      // end test for whether two node can have same value
 
       // test for whether two node can have complement value
-      lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  0 );
-      lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 0 );
-
-      satResult = sat_solver_solve( pSat, lits, lits + 2, (ABC_INT64_T)0, (ABC_INT64_T)0, (ABC_INT64_T)0, (ABC_INT64_T)0 );
-
-      if( satResult == l_False )
+      if( is1SubCondidate( pSat, pCnf1->pVarNums[Aig_ObjId( pObj )], pCnf2->pVarNums[Aig_ObjId( pObj2 )], true ) )
       {
-        lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  1 );
-        lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 1 );
-
-        satResult = sat_solver_solve( pSat, lits, lits + 2, (ABC_INT64_T)0, (ABC_INT64_T)0, (ABC_INT64_T)0, (ABC_INT64_T)0 );
-
-        if( satResult == l_False )
-        {
-          // pObj2 is a 1-input resubstitute candidate of pObj
-          Abc_Print( ABC_STANDARD, "%i is a 1-input resubstitute condidate of %i ( complement )\n", Aig_ObjId( pObj2 ), Aig_ObjId( pObj ) );
-        }
+        // pObj2 is a 1-input resubstitute candidate of pObj
+        Abc_Print( ABC_STANDARD, "%i is a 1-input resubstitute condidate of %i ( complement )\n", Aig_ObjId( pObj2 ), Aig_ObjId( pObj ) );
       }
       // end test for whether two node can have complement value
     }
@@ -178,6 +170,40 @@ int sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf )
      success &= sat_solver_addclause( pSat, pCnf->pClauses[i], pCnf->pClauses[i+1] );
 
   return success;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+
+bool is1SubCondidate( sat_solver *pSat, int variable1, int variable2, bool complement )
+{
+  int lits[3];
+  int satResult;
+
+  lits[0] = toLitCond( variable1, 0 );
+  lits[1] = toLitCond( variable2, 1 ^ complement );
+
+  satResult = sat_solver_solve( pSat, lits, lits + 2, (ABC_INT64_T)0, (ABC_INT64_T)0, (ABC_INT64_T)0, (ABC_INT64_T)0 );
+
+  if( satResult != l_False ) return false;
+
+  lits[0] = toLitCond( variable1, 1 );
+  lits[1] = toLitCond( variable2, 0 ^ complement );
+
+  satResult = sat_solver_solve( pSat, lits, lits + 2, (ABC_INT64_T)0, (ABC_INT64_T)0, (ABC_INT64_T)0, (ABC_INT64_T)0 );
+
+  if( satResult != l_False ) return false;
+
+  return true;
 }
 
 ////////////////////////////////////////////////////////////////////////
