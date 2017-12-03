@@ -23,6 +23,8 @@
 #include "base/main/mainInt.h"
 #include "sat/cnf/cnf.h"
 
+#include <map>
+
 ABC_NAMESPACE_IMPL_START
 
 ////////////////////////////////////////////////////////////////////////
@@ -34,6 +36,7 @@ extern "C" Aig_Man_t* Abc_NtkToDar( Abc_Ntk_t *pNtk, int fExors, int fRegisters 
 // end external function declaration
 
 int   sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf );
+int   sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf, Aig_Man_t *pMan, std::map<int,int> &unitAssumptionVar, const int varBias );
 bool  is1SubCondidate( sat_solver *pSat, int variable1, int variable2, bool complement );
 
 ////////////////////////////////////////////////////////////////////////
@@ -52,30 +55,30 @@ bool  is1SubCondidate( sat_solver *pSat, int variable1, int variable2, bool comp
 
 ***********************************************************************/
 
-void
-Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
+void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
 {
   if( !pNtk ) return; // preconsition
 
   // variable declaration
-  Abc_Ntk_t   *pNtk1  = pNtk;
-  Abc_Ntk_t   *pNtk2  = Abc_NtkDup( pNtk );
-  Aig_Man_t   *pMan1  = Abc_NtkToDar( pNtk1, 0, 0 );
-  Aig_Man_t   *pMan2  = Abc_NtkToDar( pNtk2, 0, 0 );
-  Cnf_Dat_t   *pCnf1  = Cnf_DeriveSimple( pMan1, 0 );
-  Cnf_Dat_t   *pCnf2  = Cnf_DeriveSimple( pMan2, 0 );
-  sat_solver  *pSat   = sat_solver_new();
-  Aig_Obj_t   *pObj;
-  Aig_Obj_t   *pObj2;
-  int         i;
-  int         j;
+  Abc_Ntk_t         *pNtk1  = pNtk;
+  Abc_Ntk_t         *pNtk2  = Abc_NtkDup( pNtk );
+  Aig_Man_t         *pMan1  = Abc_NtkToDar( pNtk1, 0, 0 );
+  Aig_Man_t         *pMan2  = Abc_NtkToDar( pNtk2, 0, 0 );
+  Cnf_Dat_t         *pCnf1  = Cnf_DeriveSimple( pMan1, 0 );
+  Cnf_Dat_t         *pCnf2  = Cnf_DeriveSimple( pMan2, 0 );
+  sat_solver        *pSat   = sat_solver_new();
+  Aig_Obj_t         *pObj;
+  Aig_Obj_t         *pObj2;
+  int               i;
+  int               j;
+  std::map<int,int> unitAssumptionVar;
   // end variable declaration
 
   Cnf_DataLift( pCnf2, pCnf1->nVars );
 
   // add cnf clauses
   sat_solver_add_cnf( pSat, pCnf1 );
-  sat_solver_add_cnf( pSat, pCnf2 );
+  sat_solver_add_cnf( pSat, pCnf2, pMan2, unitAssumptionVar, pCnf1->nVars + pCnf2->nVars );
   // end add cnf clauses
 
   // the input of two circuits should be equivalent
@@ -168,6 +171,72 @@ int sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf )
 
   for( int i = 0 ; i < pCnf->nClauses ; ++i )
      success &= sat_solver_addclause( pSat, pCnf->pClauses[i], pCnf->pClauses[i+1] );
+
+  return success;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+
+int sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf, Aig_Man_t *pMan, std::map<int,int> &unitAssumptionVar, const int varBias )
+{
+  // variables declaration
+  int success   = 1;
+  int varIndex  = varBias;
+  int lits[5];
+  // end variables declaration
+
+  for( int i = 0 ; i < pCnf->nClauses ; ++i )
+  {
+     // variables declaration
+     int        litNum = pCnf->pClauses[i+1] - pCnf->pClauses[i];
+     int        k;
+     Aig_Obj_t  *pObj;
+     // end variables declaration
+
+     for( int j = 0 ; j < litNum ; ++j )
+        lits[j] = pCnf->pClauses[i][j];
+
+     // find the output literal and create a mapping
+     Aig_ManForEachNode( pMan, pObj, k )
+     {
+       // variable declaration
+       std::map<int,int>::iterator  it = unitAssumptionVar.find( Aig_ObjId( pObj ) );
+       int                          index;
+       // end variable declaration
+
+       // check if there is a mapping
+       if( it == unitAssumptionVar.end() )
+       {
+         index = varIndex++;
+         unitAssumptionVar.insert( std::map<int,int>::value_type( Aig_ObjId( pObj ), index ) );
+       }
+       else
+         index = it->second;
+       // end check if there is a mapping
+
+       // add auxiliary literal to break the connection
+       if( lit_var( lits[0] ) == pCnf->pVarNums[Aig_ObjId( pObj )] )
+       {
+         lits[litNum] = toLitCond( index, 1 );
+         ++litNum;
+         break;
+       }
+       // end add auxiliary literal to break the connection
+     }
+     // end find the output literal and create a mapping
+
+     success &= sat_solver_addclause( pSat, lits, lits + litNum );
+  }
 
   return success;
 }
