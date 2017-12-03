@@ -124,7 +124,7 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
 
   for( std::map<int,int>::iterator it = unitAssumptionVar.begin() ; it != unitAssumptionVar.end() ; ++it )
   {
-     *( lits + offset + i ) = toLitCond( it->second, 0 );
+     *( lits + offset + i ) = toLitCond( it->second, 1 );
      ++i;
   }
   // end initialize literals
