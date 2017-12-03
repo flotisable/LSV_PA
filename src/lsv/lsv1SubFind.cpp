@@ -64,8 +64,8 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
   Abc_Ntk_t         *pNtk2  = Abc_NtkDup( pNtk );
   Aig_Man_t         *pMan1  = Abc_NtkToDar( pNtk1, 0, 0 );
   Aig_Man_t         *pMan2  = Abc_NtkToDar( pNtk2, 0, 0 );
-  Cnf_Dat_t         *pCnf1  = Cnf_DeriveSimple( pMan1, 0 );
-  Cnf_Dat_t         *pCnf2  = Cnf_DeriveSimple( pMan2, 0 );
+  Cnf_Dat_t         *pCnf1  = Cnf_DeriveSimple( pMan1, Aig_ManCoNum( pMan1 ) );
+  Cnf_Dat_t         *pCnf2  = Cnf_DeriveSimple( pMan2, Aig_ManCoNum( pMan2 ) );
   sat_solver        *pSat   = sat_solver_new();
   Aig_Obj_t         *pObj;
   Aig_Obj_t         *pObj2;
@@ -124,13 +124,13 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
 
   for( std::map<int,int>::iterator it = unitAssumptionVar.begin() ; it != unitAssumptionVar.end() ; ++it )
   {
-     *( lits + offset + i ) = toLitCond( it->second, 1 );
+     lits[offset+i] = toLitCond( it->second, 0 );
      ++i;
   }
   // end initialize literals
 
   // iterate all nodes except Po and search for the 1-input resubstitute candidates
-  Aig_ManForEachNode( pMan1, pObj, i )
+  Aig_ManForEachNode( pMan2, pObj, i )
   {
     if( Aig_ObjIsCo( pObj ) ) continue;
 
@@ -141,16 +141,16 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
       // variable declaration
       const int id1             = Aig_ObjId( pObj   );
       const int id2             = Aig_ObjId( pObj2  );
-      const int variable1       = pCnf1->pVarNums[id1];
+      const int variable1       = pCnf2->pVarNums[id1];
       const int variable2       = pCnf2->pVarNums[id2];
-      int       auxiliaryIndex  = std::distance( unitAssumptionVar.begin(), unitAssumptionVar.find( id2 ) );
+      int       auxiliaryIndex  = offset + 1 + std::distance( unitAssumptionVar.begin(), unitAssumptionVar.find( id2 ) );
       // end variable declaration
 
       // test for whether two node can have same value
       if( is1SubCondidate( pSat, variable1, variable2, auxiliaryIndex, lits, lits + litNum, false ) )
       {
         // pObj2 is a 1-input resubstitute candidate of pObj
-        Abc_Print( ABC_STANDARD, "%i is a 1-input resubstitute condidate of %i\n", id2, id1 );
+        Abc_Print( ABC_STANDARD, "%i is a 1-input resubstitute condidate of %i\n", id1, id2 );
         continue;
       }
       // end test for whether two node can have same value
@@ -159,7 +159,7 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
       if( is1SubCondidate( pSat, variable1, variable2, auxiliaryIndex, lits, lits + litNum, true ) )
       {
         // pObj2 is a 1-input resubstitute candidate of pObj
-        Abc_Print( ABC_STANDARD, "%i is a 1-input resubstitute condidate of %i ( complement )\n", id2, id1 );
+        Abc_Print( ABC_STANDARD, "%i is a 1-input resubstitute condidate of %i ( complement )\n", id1, id2 );
       }
       // end test for whether two node can have complement value
     }
@@ -215,7 +215,7 @@ int sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf, Aig_Man_t *pMan, std:
 {
   // variables declaration
   int success   = 1;
-  int varIndex  = varBias;
+  int varIndex  = varBias + 1;
   int lits[5];
   // end variables declaration
 
@@ -223,15 +223,15 @@ int sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf, Aig_Man_t *pMan, std:
   {
      // variables declaration
      int        litNum = pCnf->pClauses[i+1] - pCnf->pClauses[i];
-     int        k;
+     int        j;
      Aig_Obj_t  *pObj;
      // end variables declaration
 
-     for( int j = 0 ; j < litNum ; ++j )
+     for( j = 0 ; j < litNum ; ++j )
         lits[j] = pCnf->pClauses[i][j];
 
      // find the output literal and create a mapping
-     Aig_ManForEachNode( pMan, pObj, k )
+     Aig_ManForEachNode( pMan, pObj, j )
      {
        // variable declaration
        std::map<int,int>::iterator  it = unitAssumptionVar.find( Aig_ObjId( pObj ) );
