@@ -20,10 +20,14 @@
 ///                          INCLUDES                                ///
 ////////////////////////////////////////////////////////////////////////
 
+extern "C"
+{
 #include "base/main/mainInt.h"
 #include "sat/cnf/cnf.h"
+}
 
 #include <map>
+using std::map;
 
 ABC_NAMESPACE_IMPL_START
 
@@ -36,8 +40,8 @@ extern "C" Aig_Man_t* Abc_NtkToDar( Abc_Ntk_t *pNtk, int fExors, int fRegisters 
 // end external function declaration
 
 int   sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf );
-int   sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf, Aig_Man_t *pMan, std::map<int,int> &unitAssumptionVar, const int varBias );
-bool  is1SubCondidate( sat_solver *pSat, int variable1, int variable2, int auxiliaryIndex, int *lits, int *litsEnd, bool complement );
+int   sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf, Aig_Man_t *pMan, map<int,int> &unitAssumptionVar, const int varBias );
+bool  is1SubCondidate( sat_solver *pSat, int variable1, int variable2, int auxiliaryIndex, lit *lits, lit *litsEnd, bool complement );
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
@@ -59,19 +63,23 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
 {
   if( !pNtk ) return; // preconsition
 
+  using std::distance;
+
   // variable declaration
-  Abc_Ntk_t         *pNtk1  = pNtk;
-  Abc_Ntk_t         *pNtk2  = Abc_NtkDup( pNtk );
-  Aig_Man_t         *pMan1  = Abc_NtkToDar( pNtk1, 0, 0 );
-  Aig_Man_t         *pMan2  = Abc_NtkToDar( pNtk2, 0, 0 );
-  Cnf_Dat_t         *pCnf1  = Cnf_DeriveSimple( pMan1, Aig_ManCoNum( pMan1 ) );
-  Cnf_Dat_t         *pCnf2  = Cnf_DeriveSimple( pMan2, Aig_ManCoNum( pMan2 ) );
-  sat_solver        *pSat   = sat_solver_new();
-  Aig_Obj_t         *pObj;
-  Aig_Obj_t         *pObj2;
-  int               i;
-  int               j;
-  std::map<int,int> unitAssumptionVar;
+  Abc_Ntk_t   *pNtk1  = pNtk;
+  Abc_Ntk_t   *pNtk2  = Abc_NtkDup( pNtk );
+  Aig_Man_t   *pMan1  = Abc_NtkToDar( pNtk1, 0, 0 );
+  Aig_Man_t   *pMan2  = Abc_NtkToDar( pNtk2, 0, 0 );
+  Cnf_Dat_t   *pCnf1  = Cnf_DeriveSimple( pMan1, Aig_ManCoNum( pMan1 ) );
+  Cnf_Dat_t   *pCnf2  = Cnf_DeriveSimple( pMan2, Aig_ManCoNum( pMan2 ) );
+  sat_solver  *pSat   = sat_solver_new();
+
+  Aig_Obj_t *pObj;
+  Aig_Obj_t *pObj2;
+  int       i;
+  int       j;
+
+  map<int,int>  unitAssumptionVar;
   // end variable declaration
 
   Cnf_DataLift( pCnf2, pCnf1->nVars );
@@ -84,7 +92,7 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
   // the input of two circuits should be equivalent
   Aig_ManForEachCi( pMan1, pObj, i )
   {
-    int lits[3];
+    lit lits[3];
 
     pObj2 = Aig_ManCi( pMan2, i ); // get the corresponding Po in circuit 2
 
@@ -101,7 +109,7 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
   // the output of two circuits should be equivalent
   Aig_ManForEachCo( pMan1, pObj, i )
   {
-    int lits[3];
+    lit lits[3];
 
     pObj2 = Aig_ManCo( pMan2, i ); // get the corresponding Po in circuit 2
 
@@ -116,17 +124,13 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
   // end the output of two circuits should be equivalent
 
   // initialize literals
-  const size_t  offset = 2;
-  const size_t  litNum = offset + unitAssumptionVar.size() + 1;
-  int           *lits  = new int[litNum];
+  const size_t            offset = 2;
+  const size_t            litNum = offset + unitAssumptionVar.size() + 1;
+  lit                     *lits  = new lit[litNum];
+  map<int,int>::iterator  it;
 
-  i = 0;
-
-  for( std::map<int,int>::iterator it = unitAssumptionVar.begin() ; it != unitAssumptionVar.end() ; ++it )
-  {
+  for( it = unitAssumptionVar.begin(), i = 0 ; it != unitAssumptionVar.end() ; ++it, ++i )
      lits[offset+i] = toLitCond( it->second, 0 );
-     ++i;
-  }
   // end initialize literals
 
   // iterate all nodes except Po and search for the 1-input resubstitute candidates
@@ -143,7 +147,7 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
       const int id2             = Aig_ObjId( pObj2  );
       const int variable1       = pCnf2->pVarNums[id1];
       const int variable2       = pCnf2->pVarNums[id2];
-      int       auxiliaryIndex  = offset + 1 + std::distance( unitAssumptionVar.begin(), unitAssumptionVar.find( id2 ) );
+      const int auxiliaryIndex  = offset + distance( unitAssumptionVar.begin(), unitAssumptionVar.find( id2 ) );
       // end variable declaration
 
       // test for whether two node can have same value
@@ -216,9 +220,10 @@ int sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf, Aig_Man_t *pMan, std:
   // variables declaration
   int success   = 1;
   int varIndex  = varBias + 1;
-  int lits[5];
+  lit lits[5];
   // end variables declaration
 
+  // add clauses
   for( int i = 0 ; i < pCnf->nClauses ; ++i )
   {
      // variables declaration
@@ -233,34 +238,34 @@ int sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf, Aig_Man_t *pMan, std:
      // find the output literal and create a mapping
      Aig_ManForEachNode( pMan, pObj, j )
      {
+       if( lit_var( lits[0] ) != pCnf->pVarNums[Aig_ObjId( pObj )] ) continue;
+
        // variable declaration
-       std::map<int,int>::iterator  it = unitAssumptionVar.find( Aig_ObjId( pObj ) );
-       int                          index;
+       map<int,int>::iterator it      = unitAssumptionVar.find( Aig_ObjId( pObj ) );
+       int                    index;
        // end variable declaration
 
        // check if there is a mapping
        if( it == unitAssumptionVar.end() )
        {
          index = varIndex++;
-         unitAssumptionVar.insert( std::map<int,int>::value_type( Aig_ObjId( pObj ), index ) );
+         unitAssumptionVar.insert( map<int,int>::value_type( Aig_ObjId( pObj ), index ) );
        }
        else
          index = it->second;
        // end check if there is a mapping
 
        // add auxiliary literal to break the connection
-       if( lit_var( lits[0] ) == pCnf->pVarNums[Aig_ObjId( pObj )] )
-       {
-         lits[litNum] = toLitCond( index, 1 );
-         ++litNum;
-         break;
-       }
+       lits[litNum] = toLitCond( index, 1 );
+       ++litNum;
+       break;
        // end add auxiliary literal to break the connection
      }
      // end find the output literal and create a mapping
 
      success &= sat_solver_addclause( pSat, lits, lits + litNum );
   }
+  // end add clauses
 
   return success;
 }
@@ -277,12 +282,13 @@ int sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf, Aig_Man_t *pMan, std:
 
 ***********************************************************************/
 
-bool is1SubCondidate( sat_solver *pSat, int variable1, int variable2, int auxiliaryIndex, int *lits, int *litsEnd, bool complement )
+bool is1SubCondidate( sat_solver *pSat, int variable1, int variable2, int auxiliaryIndex, lit *lits, lit *litsEnd, bool complement )
 {
   int satResult;
 
   lits[auxiliaryIndex] = lit_neg( lits[auxiliaryIndex] );
 
+  // equivalence checking
   lits[0] = toLitCond( variable1, 0 );
   lits[1] = toLitCond( variable2, 1 ^ complement );
 
@@ -296,6 +302,7 @@ bool is1SubCondidate( sat_solver *pSat, int variable1, int variable2, int auxili
   satResult = sat_solver_solve( pSat, lits, litsEnd, (ABC_INT64_T)0, (ABC_INT64_T)0, (ABC_INT64_T)0, (ABC_INT64_T)0 );
 
   if( satResult != l_False ) goto satFalse;
+  // end equivalence checking
 
   lits[auxiliaryIndex] = lit_neg( lits[auxiliaryIndex] );
   return true;

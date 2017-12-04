@@ -20,7 +20,10 @@
 ///                          INCLUDES                                ///
 ////////////////////////////////////////////////////////////////////////
 
+extern "C"
+{
 #include "base/main/mainInt.h"
+}
 
 ABC_NAMESPACE_IMPL_START
 
