@@ -106,18 +106,21 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
   }
   // end the input of two circuits should be equivalent
 
-  // if the output of two circuits are equivalent, the miter output is 0
-  const int outputVar = pCnf1->nVars + pCnf2->nVars + unitAssumptionVar.size() + 1;
-  lit       outLit[2];
+  // if the output of miter is 1, the two circuits should be defferent
+  const int varBias   = pCnf1->nVars + pCnf2->nVars + unitAssumptionVar.size() + 1;
+  const int outputVar = varBias + Aig_ManCoNum( pMan1 );
+  lit       *outLits  = new lit[Aig_ManCoNum( pMan1 ) + 1 + 1];
 
-  outLit[0] = toLitCond( outputVar, 0 );
+  outLits[0] = toLitCond( outputVar, 0 );
+
+  sat_solver_addclause( pSat, outLits, outLits + 1 );
 
   Aig_ManForEachCo( pMan1, pObj, i )
   {
     lit lits[4];
 
     pObj2   = Aig_ManCo( pMan2, i ); // get the corresponding Po in circuit 2
-    lits[2] = toLitCond( outputVar, 1 );
+    lits[2] = toLitCond( varBias + i, 1 );
 
     lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  0 );
     lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 0 );
@@ -126,10 +129,28 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
     lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  1 );
     lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 1 );
     sat_solver_addclause( pSat, lits, lits + 3 );
-  }
 
-  sat_solver_addclause( pSat, outLit, outLit + 1 );
-  // end if the output of two circuits are equivalent, the miter output is 0
+    lits[2] = toLitCond( varBias + i, 0 );
+
+    lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  0 );
+    lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 1 );
+    sat_solver_addclause( pSat, lits, lits + 3 );
+
+    lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  1 );
+    lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 0 );
+    sat_solver_addclause( pSat, lits, lits + 3 );
+
+    lits[0] = toLitCond( varBias + i, 1 );
+    lits[1] = toLitCond( outputVar, 0 );
+    sat_solver_addclause( pSat, lits, lits + 2 );
+
+    outLits[1+i] = toLitCond( varBias + i, 0 );
+  }
+  outLits[0] = toLitCond( outputVar, 1 );
+
+  sat_solver_addclause( pSat, outLits, outLits + 1 + Aig_ManCoNum( pMan1 ) );
+  delete[] outLits;
+  // end if the output of miter is 1, the two circuits should be defferent
 
   // initialize literals
   const size_t            offset = 2;
