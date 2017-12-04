@@ -150,6 +150,17 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
     {
       if( Aig_ObjIsCo( pObj2 ) || ( i == j ) ) continue;
 
+      // check if pObj2 is pObj's transitive fanin
+      Aig_Obj_t *objs[2]  = { pObj };
+      Vec_Ptr_t *tfi      = Aig_ManDfsNodes( pMan2, objs, 1 );
+
+      if( Vec_PtrFind( tfi, pObj2 ) != -1 )
+      {
+        Vec_PtrFree( tfi );
+        continue;
+      }
+      // end check if pObj2 is pObj's transitive fanin
+
       // variable declaration
       const int id1             = Aig_ObjId( pObj   );
       const int id2             = Aig_ObjId( pObj2  );
