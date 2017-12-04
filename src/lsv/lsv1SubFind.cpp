@@ -167,7 +167,7 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
   // end iterate all nodes except Po and search for the 1-input resubstitute candidates
 
   // release memory
-  delete lits;
+  delete[] lits;
   sat_solver_delete( pSat );
   ABC_FREE( pCnf1 );
   ABC_FREE( pCnf2 );
