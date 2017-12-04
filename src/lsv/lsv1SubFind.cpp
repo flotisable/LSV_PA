@@ -106,22 +106,30 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
   }
   // end the input of two circuits should be equivalent
 
-  // the output of two circuits should be equivalent
+  // if the output of two circuits are equivalent, the miter output is 0
+  const int outputVar = pCnf1->nVars + pCnf2->nVars + unitAssumptionVar.size() + 1;
+  lit       outLit[2];
+
+  outLit[0] = toLitCond( outputVar, 0 );
+
   Aig_ManForEachCo( pMan1, pObj, i )
   {
-    lit lits[3];
+    lit lits[4];
 
-    pObj2 = Aig_ManCo( pMan2, i ); // get the corresponding Po in circuit 2
+    pObj2   = Aig_ManCo( pMan2, i ); // get the corresponding Po in circuit 2
+    lits[2] = toLitCond( outputVar, 1 );
 
     lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  0 );
-    lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 1 );
-    sat_solver_addclause( pSat, lits, lits + 2 );
+    lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 0 );
+    sat_solver_addclause( pSat, lits, lits + 3 );
 
     lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  1 );
-    lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 0 );
-    sat_solver_addclause( pSat, lits, lits + 2 );
+    lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 1 );
+    sat_solver_addclause( pSat, lits, lits + 3 );
   }
-  // end the output of two circuits should be equivalent
+
+  sat_solver_addclause( pSat, outLit, outLit + 1 );
+  // end if the output of two circuits are equivalent, the miter output is 0
 
   // initialize literals
   const size_t            offset = 2;
@@ -289,14 +297,14 @@ bool is1SubCondidate( sat_solver *pSat, int variable1, int variable2, int auxili
   lits[auxiliaryIndex] = lit_neg( lits[auxiliaryIndex] );
 
   // equivalence checking
-  lits[0] = toLitCond( variable1, 0 );
+  lits[0] = toLitCond( variable1, 1 );
   lits[1] = toLitCond( variable2, 1 ^ complement );
 
   satResult = sat_solver_solve( pSat, lits, litsEnd, (ABC_INT64_T)0, (ABC_INT64_T)0, (ABC_INT64_T)0, (ABC_INT64_T)0 );
 
   if( satResult != l_False ) goto satFalse;
 
-  lits[0] = toLitCond( variable1, 1 );
+  lits[0] = toLitCond( variable1, 0 );
   lits[1] = toLitCond( variable2, 0 ^ complement );
 
   satResult = sat_solver_solve( pSat, lits, litsEnd, (ABC_INT64_T)0, (ABC_INT64_T)0, (ABC_INT64_T)0, (ABC_INT64_T)0 );
