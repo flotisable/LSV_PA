@@ -66,9 +66,11 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
 {
   if( !pNtk ) return; // preconsition
 
+  // using declaration in other namespace
   using std::distance;
   using std::sort;
   using std::pair;
+  // end using declaration in other namespace
 
   // variable declaration
   Abc_Ntk_t   *pNtk1  = pNtk;
@@ -121,11 +123,14 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
 
   sat_solver_addclause( pSat, outLits, outLits + 1 );
 
+  // setup Po constraints
   Aig_ManForEachCo( pMan1, pObj, i )
   {
     lit lits[4];
 
-    pObj2   = Aig_ManCo( pMan2, i ); // get the corresponding Po in circuit 2
+    pObj2 = Aig_ManCo( pMan2, i ); // get the corresponding Po in circuit 2
+
+    // setup xor constraint
     lits[2] = toLitCond( varBias + i, 1 );
 
     lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  0 );
@@ -145,13 +150,17 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
     lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  1 );
     lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 0 );
     sat_solver_addclause( pSat, lits, lits + 3 );
+    // end setup xor constraint
 
+    // setup output or constraint
     lits[0] = toLitCond( varBias + i, 1 );
     lits[1] = toLitCond( outputVar, 0 );
     sat_solver_addclause( pSat, lits, lits + 2 );
+    // end setup output or constraint
 
     outLits[1+i] = toLitCond( varBias + i, 0 );
   }
+  // end setup Po constraints
   outLits[0] = toLitCond( outputVar, 1 );
 
   sat_solver_addclause( pSat, outLits, outLits + 1 + Aig_ManCoNum( pMan1 ) );
@@ -169,13 +178,14 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
   // end initialize literals
 
   // iterate all nodes except Po and search for the 1-input resubstitute candidates
-  Aig_ManForEachNode( pMan2, pObj, i )
+  Aig_ManForEachObj( pMan2, pObj, i )
   {
-    if( Aig_ObjIsCo( pObj ) ) continue;
+    if( !Aig_ObjIsCand( pObj ) ) continue;
 
-    Aig_ManForEachNode( pMan2, pObj2, j )
+    Aig_ManForEachObj( pMan2, pObj2, j )
     {
-      if( Aig_ObjIsCo( pObj2 ) || ( i == j ) ) continue;
+      if( !Aig_ObjIsCand( pObj2 ) || ( i == j ) ) continue;
+      if( Aig_ObjIsCi( pObj2 ) && !Aig_ObjIsCi( pObj ) ) continue;
 
       // check if pObj2 is pObj's transitive fanin
       Aig_Obj_t *objs[2]  = { pObj };
@@ -214,6 +224,7 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
   }
   // end iterate all nodes except Po and search for the 1-input resubstitute candidates
 
+  // output answer
   for( size_t i = 0 ; i < subCand.size() ; ++i )
   {
      Abc_Print( ABC_STANDARD, "n%i:", i + 1 );
@@ -227,6 +238,7 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
      }
      Abc_Print( ABC_STANDARD, "\n" );
   }
+  // end output answer
 
   // release memory
   delete[] lits;
