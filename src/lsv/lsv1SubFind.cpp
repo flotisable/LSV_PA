@@ -27,7 +27,10 @@ extern "C"
 }
 
 #include <map>
+#include <vector>
+#include <algorithm>
 using std::map;
+using std::vector;
 
 ABC_NAMESPACE_IMPL_START
 
@@ -64,6 +67,8 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
   if( !pNtk ) return; // preconsition
 
   using std::distance;
+  using std::sort;
+  using std::pair;
 
   // variable declaration
   Abc_Ntk_t   *pNtk1  = pNtk;
@@ -79,7 +84,8 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
   int       i;
   int       j;
 
-  map<int,int>  unitAssumptionVar;
+  map<int,int>                        unitAssumptionVar;
+  vector< vector< pair<int, bool> > > subCand( Aig_ManObjNum( pMan1 ) );
   // end variable declaration
 
   Cnf_DataLift( pCnf2, pCnf1->nVars );
@@ -193,8 +199,7 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
       // test for whether two node can have same value
       if( is1SubCondidate( pSat, variable1, variable2, auxiliaryIndex, lits, lits + litNum, false ) )
       {
-        // pObj2 is a 1-input resubstitute candidate of pObj
-        Abc_Print( ABC_STANDARD, "%i is a 1-input resubstitute condidate of %i\n", id1, id2 );
+        subCand[id2].push_back( pair<int,bool>( id1, false ) );
         continue;
       }
       // end test for whether two node can have same value
@@ -202,13 +207,26 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
       // test for whether two node can have complement value
       if( is1SubCondidate( pSat, variable1, variable2, auxiliaryIndex, lits, lits + litNum, true ) )
       {
-        // pObj2 is a 1-input resubstitute candidate of pObj
-        Abc_Print( ABC_STANDARD, "%i is a 1-input resubstitute condidate of %i ( complement )\n", id1, id2 );
+        subCand[id2].push_back( pair<int,bool>( id1, true ) );
       }
       // end test for whether two node can have complement value
     }
   }
   // end iterate all nodes except Po and search for the 1-input resubstitute candidates
+
+  for( size_t i = 0 ; i < subCand.size() ; ++i )
+  {
+     Abc_Print( ABC_STANDARD, "n%i:", i + 1 );
+     sort( subCand[i].begin(), subCand[i].end() );
+
+     for( size_t j = 0 ; j < subCand[i].size() ; ++j )
+     {
+        Abc_Print( ABC_STANDARD, " " );
+        if( subCand[i][j].second ) Abc_Print( ABC_STANDARD, "-" );
+        Abc_Print( ABC_STANDARD, "n%i", subCand[i][j].first + 1 );
+     }
+     Abc_Print( ABC_STANDARD, "\n" );
+  }
 
   // release memory
   delete[] lits;
