@@ -44,7 +44,9 @@ extern "C" Aig_Man_t* Abc_NtkToDar( Abc_Ntk_t *pNtk, int fExors, int fRegisters 
 
 int   sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf );
 int   sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf, Aig_Man_t *pMan, map<int,int> &unitAssumptionVar, const int varBias );
-bool  is1SubCondidate( sat_solver *pSat, int variable1, int variable2, int auxiliaryIndex, lit *lits, lit *litsEnd, bool complement );
+void  addPiConstraints  ( sat_solver *pSat, Aig_Man_t *pMan1, Aig_Man_t *pMan2, Cnf_Dat_t *pCnf1, Cnf_Dat_t *pCnf2 );
+void  addPoConstraints  ( sat_solver *pSat, Aig_Man_t *pMan1, Aig_Man_t *pMan2, Cnf_Dat_t *pCnf1, Cnf_Dat_t *pCnf2, int varBias );
+bool  is1SubCondidate   ( sat_solver *pSat, int variable1, int variable2, int auxiliaryIndex, lit *lits, lit *litsEnd, bool complement );
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
@@ -97,76 +99,8 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
   sat_solver_add_cnf( pSat, pCnf2, pMan2, unitAssumptionVar, pCnf1->nVars + pCnf2->nVars );
   // end add cnf clauses
 
-  // the input of two circuits should be equivalent
-  Aig_ManForEachCi( pMan1, pObj, i )
-  {
-    lit lits[3];
-
-    pObj2 = Aig_ManCi( pMan2, i ); // get the corresponding Po in circuit 2
-
-    lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  0 );
-    lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 1 );
-    sat_solver_addclause( pSat, lits, lits + 2 );
-
-    lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  1 );
-    lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 0 );
-    sat_solver_addclause( pSat, lits, lits + 2 );
-  }
-  // end the input of two circuits should be equivalent
-
-  // if the output of miter is 1, the two circuits should be defferent
-  const int varBias   = pCnf1->nVars + pCnf2->nVars + unitAssumptionVar.size() + 1;
-  const int outputVar = varBias + Aig_ManCoNum( pMan1 );
-  lit       *outLits  = new lit[Aig_ManCoNum( pMan1 ) + 1 + 1];
-
-  outLits[0] = toLitCond( outputVar, 0 );
-
-  sat_solver_addclause( pSat, outLits, outLits + 1 );
-
-  // setup Po constraints
-  Aig_ManForEachCo( pMan1, pObj, i )
-  {
-    lit lits[4];
-
-    pObj2 = Aig_ManCo( pMan2, i ); // get the corresponding Po in circuit 2
-
-    // setup xor constraint
-    lits[2] = toLitCond( varBias + i, 1 );
-
-    lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  0 );
-    lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 0 );
-    sat_solver_addclause( pSat, lits, lits + 3 );
-
-    lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  1 );
-    lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 1 );
-    sat_solver_addclause( pSat, lits, lits + 3 );
-
-    lits[2] = toLitCond( varBias + i, 0 );
-
-    lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  0 );
-    lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 1 );
-    sat_solver_addclause( pSat, lits, lits + 3 );
-
-    lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  1 );
-    lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 0 );
-    sat_solver_addclause( pSat, lits, lits + 3 );
-    // end setup xor constraint
-
-    // setup output or constraint
-    lits[0] = toLitCond( varBias + i, 1 );
-    lits[1] = toLitCond( outputVar, 0 );
-    sat_solver_addclause( pSat, lits, lits + 2 );
-    // end setup output or constraint
-
-    outLits[1+i] = toLitCond( varBias + i, 0 );
-  }
-  // end setup Po constraints
-  outLits[0] = toLitCond( outputVar, 1 );
-
-  sat_solver_addclause( pSat, outLits, outLits + 1 + Aig_ManCoNum( pMan1 ) );
-  delete[] outLits;
-  // end if the output of miter is 1, the two circuits should be defferent
-
+  addPiConstraints( pSat, pMan1, pMan2, pCnf1, pCnf2 );
+  addPoConstraints( pSat, pMan1, pMan2, pCnf1, pCnf2, pCnf1->nVars + pCnf2->nVars + unitAssumptionVar.size() );
   // initialize literals
   const size_t            offset = 2;
   const size_t            litNum = offset + unitAssumptionVar.size() + 1;
@@ -338,6 +272,118 @@ int sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf, Aig_Man_t *pMan, std:
   // end add clauses
 
   return success;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+
+void addPiConstraints( sat_solver *pSat, Aig_Man_t *pMan1, Aig_Man_t *pMan2, Cnf_Dat_t *pCnf1, Cnf_Dat_t *pCnf2 )
+{
+  // variable declaration
+  Aig_Obj_t *pObj;
+  Aig_Obj_t *pObj2;
+  int       i;
+  lit       lits[3];
+  // end variable declaration
+
+  // the input of two circuits should be equivalent
+  Aig_ManForEachCi( pMan1, pObj, i )
+  {
+    pObj2 = Aig_ManCi( pMan2, i ); // get the corresponding Po in circuit 2
+
+    lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  0 );
+    lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 1 );
+    sat_solver_addclause( pSat, lits, lits + 2 );
+
+    lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  1 );
+    lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 0 );
+    sat_solver_addclause( pSat, lits, lits + 2 );
+  }
+  // end the input of two circuits should be equivalent
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+
+void addPoConstraints( sat_solver *pSat, Aig_Man_t *pMan1, Aig_Man_t *pMan2, Cnf_Dat_t *pCnf1, Cnf_Dat_t *pCnf2, int varBias )
+{
+  // if the output of miter is 1, the two circuits should be defferent
+  // variable declaration
+  const int coNum     = Aig_ManCoNum( pMan1 );
+  int       index     = varBias + 1;
+  const int outputVar = index + coNum;
+  lit       *outLits  = new lit[coNum + 1 + 1];
+  lit       lits[4];
+  Aig_Obj_t *pObj;
+  Aig_Obj_t *pObj2;
+  int       i;
+  // end variable declaration
+
+  // setup Po constraints
+  Aig_ManForEachCo( pMan1, pObj, i )
+  {
+    pObj2 = Aig_ManCo( pMan2, i ); // get the corresponding Po in circuit 2
+
+    // setup xor constraint
+    lits[2] = toLitCond( index, 1 );
+
+    lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  0 );
+    lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 0 );
+    sat_solver_addclause( pSat, lits, lits + 3 );
+
+    lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  1 );
+    lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 1 );
+    sat_solver_addclause( pSat, lits, lits + 3 );
+
+    lits[2] = toLitCond( index, 0 );
+
+    lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  0 );
+    lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 1 );
+    sat_solver_addclause( pSat, lits, lits + 3 );
+
+    lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  1 );
+    lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 0 );
+    sat_solver_addclause( pSat, lits, lits + 3 );
+    // end setup xor constraint
+
+    // setup output or constraint
+    lits[0] = toLitCond( index, 1 );
+    lits[1] = toLitCond( outputVar, 0 );
+    sat_solver_addclause( pSat, lits, lits + 2 );
+    // end setup output or constraint
+
+    outLits[1+i] = toLitCond( index, 0 );
+    ++index;
+  }
+  // end setup Po constraints
+  outLits[0] = toLitCond( outputVar, 1 );
+
+  sat_solver_addclause( pSat, outLits, outLits + 1 + coNum );
+
+  outLits[0] = toLitCond( outputVar, 0 );
+
+  sat_solver_addclause( pSat, outLits, outLits + 1 );
+
+  delete[] outLits;
+  // end if the output of miter is 1, the two circuits should be defferent
 }
 
 /**Function*************************************************************
