@@ -43,9 +43,9 @@ extern "C" Aig_Man_t* Abc_NtkToDar( Abc_Ntk_t *pNtk, int fExors, int fRegisters 
 // end external function declaration
 
 int   sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf );
-int   sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf, Aig_Man_t *pMan, map<int,int> &unitAssumptionVar, const int varBias );
+int   sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf, Aig_Man_t *pMan, map<int,int> &unitAssumptionVar );
 void  addPiConstraints  ( sat_solver *pSat, Aig_Man_t *pMan1, Aig_Man_t *pMan2, Cnf_Dat_t *pCnf1, Cnf_Dat_t *pCnf2 );
-void  addPoConstraints  ( sat_solver *pSat, Aig_Man_t *pMan1, Aig_Man_t *pMan2, Cnf_Dat_t *pCnf1, Cnf_Dat_t *pCnf2, int varBias );
+void  addPoConstraints  ( sat_solver *pSat, Aig_Man_t *pMan1, Aig_Man_t *pMan2, Cnf_Dat_t *pCnf1, Cnf_Dat_t *pCnf2 );
 bool  is1SubCondidate   ( sat_solver *pSat, int variable1, int variable2, int auxiliaryIndex, lit *lits, lit *litsEnd, bool complement );
 
 ////////////////////////////////////////////////////////////////////////
@@ -66,7 +66,7 @@ bool  is1SubCondidate   ( sat_solver *pSat, int variable1, int variable2, int au
 
 void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
 {
-  if( !pNtk ) return; // preconsition
+  if( !pNtk ) return; // precondition
 
   // using declaration in other namespace
   using std::distance;
@@ -92,15 +92,16 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
   vector< vector< pair<int, bool> > > subCand( Aig_ManObjNum( pMan1 ) );
   // end variable declaration
 
+  sat_solver_setnvars( pSat, pCnf1->nVars + pCnf2->nVars );
   Cnf_DataLift( pCnf2, pCnf1->nVars );
 
   // add cnf clauses
   sat_solver_add_cnf( pSat, pCnf1 );
-  sat_solver_add_cnf( pSat, pCnf2, pMan2, unitAssumptionVar, pCnf1->nVars + pCnf2->nVars );
+  sat_solver_add_cnf( pSat, pCnf2, pMan2, unitAssumptionVar );
+  addPiConstraints  ( pSat, pMan1, pMan2, pCnf1, pCnf2 );
+  addPoConstraints  ( pSat, pMan1, pMan2, pCnf1, pCnf2 );
   // end add cnf clauses
 
-  addPiConstraints( pSat, pMan1, pMan2, pCnf1, pCnf2 );
-  addPoConstraints( pSat, pMan1, pMan2, pCnf1, pCnf2, pCnf1->nVars + pCnf2->nVars + unitAssumptionVar.size() );
   // initialize literals
   const size_t            offset = 2;
   const size_t            litNum = offset + unitAssumptionVar.size() + 1;
@@ -122,7 +123,7 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
       if( Aig_ObjIsCi( pObj2 ) && !Aig_ObjIsCi( pObj ) ) continue;
 
       // check if pObj2 is pObj's transitive fanin
-      Aig_Obj_t *objs[2]  = { pObj };
+      Aig_Obj_t *objs[1]  = { pObj };
       Vec_Ptr_t *tfi      = Aig_ManDfsNodes( pMan2, objs, 1 );
 
       if( Vec_PtrFind( tfi, pObj2 ) != -1 )
@@ -130,6 +131,7 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
         Vec_PtrFree( tfi );
         continue;
       }
+      Vec_PtrFree( tfi );
       // end check if pObj2 is pObj's transitive fanin
 
       // variable declaration
@@ -219,11 +221,10 @@ int sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf )
 
 ***********************************************************************/
 
-int sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf, Aig_Man_t *pMan, std::map<int,int> &unitAssumptionVar, const int varBias )
+int sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf, Aig_Man_t *pMan, std::map<int,int> &unitAssumptionVar )
 {
   // variables declaration
-  int success   = 1;
-  int varIndex  = varBias + 1;
+  int success = 1;
   lit lits[5];
   // end variables declaration
 
@@ -252,7 +253,7 @@ int sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf, Aig_Man_t *pMan, std:
        // check if there is a mapping
        if( it == unitAssumptionVar.end() )
        {
-         index = varIndex++;
+         index = sat_solver_addvar( pSat );
          unitAssumptionVar.insert( map<int,int>::value_type( Aig_ObjId( pObj ), index ) );
        }
        else
@@ -323,13 +324,12 @@ void addPiConstraints( sat_solver *pSat, Aig_Man_t *pMan1, Aig_Man_t *pMan2, Cnf
 
 ***********************************************************************/
 
-void addPoConstraints( sat_solver *pSat, Aig_Man_t *pMan1, Aig_Man_t *pMan2, Cnf_Dat_t *pCnf1, Cnf_Dat_t *pCnf2, int varBias )
+void addPoConstraints( sat_solver *pSat, Aig_Man_t *pMan1, Aig_Man_t *pMan2, Cnf_Dat_t *pCnf1, Cnf_Dat_t *pCnf2 )
 {
   // if the output of miter is 1, the two circuits should be defferent
   // variable declaration
   const int coNum     = Aig_ManCoNum( pMan1 );
-  int       index     = varBias + 1;
-  const int outputVar = index + coNum;
+  const int outputVar = sat_solver_addvar( pSat );
   lit       *outLits  = new lit[coNum + 1 + 1];
   lit       lits[4];
   Aig_Obj_t *pObj;
@@ -340,6 +340,8 @@ void addPoConstraints( sat_solver *pSat, Aig_Man_t *pMan1, Aig_Man_t *pMan2, Cnf
   // setup Po constraints
   Aig_ManForEachCo( pMan1, pObj, i )
   {
+    int index = sat_solver_addvar( pSat );
+
     pObj2 = Aig_ManCo( pMan2, i ); // get the corresponding Po in circuit 2
 
     // setup xor constraint
@@ -371,9 +373,10 @@ void addPoConstraints( sat_solver *pSat, Aig_Man_t *pMan1, Aig_Man_t *pMan2, Cnf
     // end setup output or constraint
 
     outLits[1+i] = toLitCond( index, 0 );
-    ++index;
   }
   // end setup Po constraints
+
+  // set miter output constraints
   outLits[0] = toLitCond( outputVar, 1 );
 
   sat_solver_addclause( pSat, outLits, outLits + 1 + coNum );
@@ -381,6 +384,7 @@ void addPoConstraints( sat_solver *pSat, Aig_Man_t *pMan1, Aig_Man_t *pMan2, Cnf
   outLits[0] = toLitCond( outputVar, 0 );
 
   sat_solver_addclause( pSat, outLits, outLits + 1 );
+  // end set miter output constraints
 
   delete[] outLits;
   // end if the output of miter is 1, the two circuits should be defferent
