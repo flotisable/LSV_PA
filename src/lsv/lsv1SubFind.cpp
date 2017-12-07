@@ -102,7 +102,7 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
   addPoConstraints  ( pSat, pMan1, pMan2, pCnf1, pCnf2 );
   // end add cnf clauses
 
-  // initialize literals
+  // initialize unit assumption literals
   const size_t            offset = 2;
   const size_t            litNum = offset + unitAssumptionVar.size() + 1;
   lit                     *lits  = new lit[litNum];
@@ -110,21 +110,23 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
 
   for( it = unitAssumptionVar.begin(), i = 0 ; it != unitAssumptionVar.end() ; ++it, ++i )
      lits[offset+i] = toLitCond( it->second, 0 );
-  // end initialize literals
+  // end initialize unit assumption literals
 
   // iterate all nodes except Po and search for the 1-input resubstitute candidates
   Aig_ManForEachObj( pMan2, pObj, i )
   {
-    if( !Aig_ObjIsCand( pObj ) ) continue;
+    if( !Aig_ObjIsCand( pObj ) ) continue; // only check for candidate of the circuit
 
     Aig_ManForEachObj( pMan2, pObj2, j )
     {
-      if( !Aig_ObjIsCand( pObj2 ) || ( i == j ) ) continue;
-      if( Aig_ObjIsCi( pObj2 ) && !Aig_ObjIsCi( pObj ) ) continue;
+      if( !Aig_ObjIsCand( pObj2 ) ) continue; // only check for candidate of the circuit
+      if( pObj == pObj2 ) continue;           // do not check the same object
 
       // check if pObj2 is pObj's transitive fanin
-      Aig_Obj_t *objs[1]  = { pObj };
-      Vec_Ptr_t *tfi      = Aig_ManDfsNodes( pMan2, objs, 1 );
+      if( Aig_ObjIsCi( pObj2 ) && !Aig_ObjIsCi( pObj ) ) continue;
+
+      Aig_Obj_t *objs[] = { pObj };
+      Vec_Ptr_t *tfi    = Aig_ManDfsNodes( pMan2, objs, 1 );
 
       if( Vec_PtrFind( tfi, pObj2 ) != -1 )
       {
@@ -144,17 +146,12 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
 
       // test for whether two node can have same value
       if( is1SubCondidate( pSat, variable1, variable2, auxiliaryIndex, lits, lits + litNum, false ) )
-      {
         subCand[id2].push_back( pair<int,bool>( id1, false ) );
-        continue;
-      }
       // end test for whether two node can have same value
 
       // test for whether two node can have complement value
       if( is1SubCondidate( pSat, variable1, variable2, auxiliaryIndex, lits, lits + litNum, true ) )
-      {
         subCand[id2].push_back( pair<int,bool>( id1, true ) );
-      }
       // end test for whether two node can have complement value
     }
   }
@@ -247,21 +244,21 @@ int sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf, Aig_Man_t *pMan, map<
 
        // variable declaration
        map<int,int>::iterator it      = unitAssumptionVar.find( Aig_ObjId( pObj ) );
-       int                    index;
+       int                    var;
        // end variable declaration
 
        // check if there is a mapping
        if( it == unitAssumptionVar.end() )
        {
-         index = sat_solver_addvar( pSat );
-         unitAssumptionVar.insert( map<int,int>::value_type( Aig_ObjId( pObj ), index ) );
+         var = sat_solver_addvar( pSat );
+         unitAssumptionVar.insert( map<int,int>::value_type( Aig_ObjId( pObj ), var ) );
        }
        else
-         index = it->second;
+         var = it->second;
        // end check if there is a mapping
 
        // add auxiliary literal to break the connection
-       lits[litNum] = toLitCond( index, 1 );
+       lits[litNum] = toLitCond( var, 1 );
        ++litNum;
        break;
        // end add auxiliary literal to break the connection
@@ -299,13 +296,13 @@ void addPiConstraints( sat_solver *pSat, Aig_Man_t *pMan1, Aig_Man_t *pMan2, Cnf
   // the input of two circuits should be equivalent
   Aig_ManForEachCi( pMan1, pObj, i )
   {
-    int index = sat_solver_addvar( pSat );
+    int var = sat_solver_addvar( pSat );
 
     pObj2 = Aig_ManCi( pMan2, i ); // get the corresponding Po in circuit 2
 
-    unitAssumptionVar.insert( map<int,int>::value_type( Aig_ObjId( pObj2 ), index ) );
+    unitAssumptionVar.insert( map<int,int>::value_type( Aig_ObjId( pObj2 ), var ) );
 
-    lits[2] = toLitCond( index, 1 );
+    lits[2] = toLitCond( var, 1 );
 
     lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  0 );
     lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 1 );
@@ -336,7 +333,7 @@ void addPoConstraints( sat_solver *pSat, Aig_Man_t *pMan1, Aig_Man_t *pMan2, Cnf
   // variable declaration
   const int coNum     = Aig_ManCoNum( pMan1 );
   const int outputVar = sat_solver_addvar( pSat );
-  lit       *outLits  = new lit[coNum + 1 + 1];
+  lit       *outLits  = new lit[1 + coNum + 1];
   lit       lits[4];
   Aig_Obj_t *pObj;
   Aig_Obj_t *pObj2;
@@ -346,12 +343,12 @@ void addPoConstraints( sat_solver *pSat, Aig_Man_t *pMan1, Aig_Man_t *pMan2, Cnf
   // setup Po constraints
   Aig_ManForEachCo( pMan1, pObj, i )
   {
-    int index = sat_solver_addvar( pSat );
+    int var = sat_solver_addvar( pSat );
 
     pObj2 = Aig_ManCo( pMan2, i ); // get the corresponding Po in circuit 2
 
     // setup xor constraint
-    lits[2] = toLitCond( index, 1 );
+    lits[2] = toLitCond( var, 1 );
 
     lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  0 );
     lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 0 );
@@ -361,7 +358,7 @@ void addPoConstraints( sat_solver *pSat, Aig_Man_t *pMan1, Aig_Man_t *pMan2, Cnf
     lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 1 );
     sat_solver_addclause( pSat, lits, lits + 3 );
 
-    lits[2] = toLitCond( index, 0 );
+    lits[2] = toLitCond( var, 0 );
 
     lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  0 );
     lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 1 );
@@ -373,12 +370,12 @@ void addPoConstraints( sat_solver *pSat, Aig_Man_t *pMan1, Aig_Man_t *pMan2, Cnf
     // end setup xor constraint
 
     // setup output or constraint
-    lits[0] = toLitCond( index, 1 );
+    lits[0] = toLitCond( var, 1 );
     lits[1] = toLitCond( outputVar, 0 );
     sat_solver_addclause( pSat, lits, lits + 2 );
     // end setup output or constraint
 
-    outLits[1+i] = toLitCond( index, 0 );
+    outLits[1+i] = toLitCond( var, 0 );
   }
   // end setup Po constraints
 
