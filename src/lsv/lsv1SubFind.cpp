@@ -44,7 +44,7 @@ extern "C" Aig_Man_t* Abc_NtkToDar( Abc_Ntk_t *pNtk, int fExors, int fRegisters 
 
 int   sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf );
 int   sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf, Aig_Man_t *pMan, map<int,int> &unitAssumptionVar );
-void  addPiConstraints  ( sat_solver *pSat, Aig_Man_t *pMan1, Aig_Man_t *pMan2, Cnf_Dat_t *pCnf1, Cnf_Dat_t *pCnf2 );
+void  addPiConstraints  ( sat_solver *pSat, Aig_Man_t *pMan1, Aig_Man_t *pMan2, Cnf_Dat_t *pCnf1, Cnf_Dat_t *pCnf2, map<int,int> &unitAssumptionVar );
 void  addPoConstraints  ( sat_solver *pSat, Aig_Man_t *pMan1, Aig_Man_t *pMan2, Cnf_Dat_t *pCnf1, Cnf_Dat_t *pCnf2 );
 bool  is1SubCondidate   ( sat_solver *pSat, int variable1, int variable2, int auxiliaryIndex, lit *lits, lit *litsEnd, bool complement );
 
@@ -98,7 +98,7 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
   // add cnf clauses
   sat_solver_add_cnf( pSat, pCnf1 );
   sat_solver_add_cnf( pSat, pCnf2, pMan2, unitAssumptionVar );
-  addPiConstraints  ( pSat, pMan1, pMan2, pCnf1, pCnf2 );
+  addPiConstraints  ( pSat, pMan1, pMan2, pCnf1, pCnf2, unitAssumptionVar );
   addPoConstraints  ( pSat, pMan1, pMan2, pCnf1, pCnf2 );
   // end add cnf clauses
 
@@ -221,7 +221,7 @@ int sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf )
 
 ***********************************************************************/
 
-int sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf, Aig_Man_t *pMan, std::map<int,int> &unitAssumptionVar )
+int sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf, Aig_Man_t *pMan, map<int,int> &unitAssumptionVar )
 {
   // variables declaration
   int success = 1;
@@ -287,27 +287,33 @@ int sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf, Aig_Man_t *pMan, std:
 
 ***********************************************************************/
 
-void addPiConstraints( sat_solver *pSat, Aig_Man_t *pMan1, Aig_Man_t *pMan2, Cnf_Dat_t *pCnf1, Cnf_Dat_t *pCnf2 )
+void addPiConstraints( sat_solver *pSat, Aig_Man_t *pMan1, Aig_Man_t *pMan2, Cnf_Dat_t *pCnf1, Cnf_Dat_t *pCnf2, map<int,int> &unitAssumptionVar )
 {
   // variable declaration
   Aig_Obj_t *pObj;
   Aig_Obj_t *pObj2;
   int       i;
-  lit       lits[3];
+  lit       lits[4];
   // end variable declaration
 
   // the input of two circuits should be equivalent
   Aig_ManForEachCi( pMan1, pObj, i )
   {
+    int index = sat_solver_addvar( pSat );
+
     pObj2 = Aig_ManCi( pMan2, i ); // get the corresponding Po in circuit 2
+
+    unitAssumptionVar.insert( map<int,int>::value_type( Aig_ObjId( pObj2 ), index ) );
+
+    lits[2] = toLitCond( index, 1 );
 
     lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  0 );
     lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 1 );
-    sat_solver_addclause( pSat, lits, lits + 2 );
+    sat_solver_addclause( pSat, lits, lits + 3 );
 
     lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj )],  1 );
     lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 0 );
-    sat_solver_addclause( pSat, lits, lits + 2 );
+    sat_solver_addclause( pSat, lits, lits + 3 );
   }
   // end the input of two circuits should be equivalent
 }
