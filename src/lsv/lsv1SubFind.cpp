@@ -1,12 +1,12 @@
 /**CFile****************************************************************
 
-  FileName    [lsvMajFind.cpp]
+  FileName    [lsv1Subfind.cpp]
 
   SystemName  [ABC: Logic synthesis and verification system.]
 
   PackageName [lsv: Logic Synthesis and Verification PA.]
 
-  Synopsis    [procedure for finding MAJ gates.]
+  Synopsis    [procedure for finding 1 input resubstitute candidate.]
 
   Author      [Nian-Ze Lee]
 
@@ -29,8 +29,7 @@ extern "C"
 #include <map>
 #include <vector>
 #include <algorithm>
-using std::map;
-using std::vector;
+using namespace std;
 
 ABC_NAMESPACE_IMPL_START
 
@@ -64,15 +63,9 @@ bool  is1SubCondidate   ( sat_solver *pSat, int variable1, int variable2, int au
 
 ***********************************************************************/
 
-void Lsv_Ntk1SubFind( Abc_Ntk_t * pNtk )
+void Lsv_Ntk1SubFind( Abc_Ntk_t *pNtk )
 {
   if( !pNtk ) return; // precondition
-
-  // using declaration in other namespace
-  using std::distance;
-  using std::sort;
-  using std::pair;
-  // end using declaration in other namespace
 
   // variable declaration
   Abc_Ntk_t   *pNtk1  = pNtk;
