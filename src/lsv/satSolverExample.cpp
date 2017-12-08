@@ -81,7 +81,7 @@ void satSolverExample( Abc_Ntk_t *pNtk )
   Cnf_DataFree( pCnf2 );
   Aig_ManStop( pMan1 );
   Aig_ManStop( pMan2 );
-  Abc_NtkDelete( pNtk );
+  Abc_NtkDelete( pNtk2 );
   // end release memory
 }
 
@@ -166,9 +166,9 @@ static void printAigCoTfi( Aig_Man_t *pMan )
   Aig_ManForEachObj( pMan, pObj, i )
   {
     if( Vec_PtrFind( tfi, pObj ) == -1 )
-      Abc_Print( ABC_STANDARD, "%i is not the TFI of %i\n", Aig_ObjId( pObj ), Aig_ManCo( pMan, 0 ) );
+      Abc_Print( ABC_STANDARD, "%i is not the TFI of %i\n", Aig_ObjId( pObj ), Aig_ObjId( Aig_ManCo( pMan, 0 ) ) );
     else
-      Abc_Print( ABC_STANDARD, "%i is the TFI of %i\n", Aig_ObjId( pObj ), Aig_ManCo( pMan, 0 ) );
+      Abc_Print( ABC_STANDARD, "%i is the TFI of %i\n", Aig_ObjId( pObj ), Aig_ObjId( Aig_ManCo( pMan, 0 ) ) );
   }
 
   // release memory
