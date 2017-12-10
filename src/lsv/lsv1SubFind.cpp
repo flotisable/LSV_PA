@@ -153,14 +153,14 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t *pNtk )
   // output answer
   for( size_t i = 0 ; i < subCand.size() ; ++i )
   {
-     Abc_Print( ABC_STANDARD, "n%i:", i + 1 );
+     Abc_Print( ABC_STANDARD, "%s:", Abc_ObjName( Abc_NtkObj( pNtk, i ) ) );
      sort( subCand[i].begin(), subCand[i].end() );
 
      for( size_t j = 0 ; j < subCand[i].size() ; ++j )
      {
         Abc_Print( ABC_STANDARD, " " );
         if( subCand[i][j].second ) Abc_Print( ABC_STANDARD, "-" );
-        Abc_Print( ABC_STANDARD, "n%i", subCand[i][j].first + 1 );
+        Abc_Print( ABC_STANDARD, "%s", Abc_ObjName( Abc_NtkObj( pNtk, subCand[i][j].first ) ) );
      }
      Abc_Print( ABC_STANDARD, "\n" );
   }
