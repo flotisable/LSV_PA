@@ -76,8 +76,8 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t *pNtk )
   Cnf_Dat_t   *pCnf2  = Cnf_DeriveSimple( pMan2, Aig_ManCoNum( pMan2 ) );
   sat_solver  *pSat   = sat_solver_new();
 
-  Aig_Obj_t *pObj;
-  Aig_Obj_t *pObj2;
+  Abc_Obj_t *pObj;
+  Abc_Obj_t *pObj2;
   int       i;
   int       j;
 
@@ -106,20 +106,20 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t *pNtk )
   // end initialize unit assumption literals
 
   // iterate all nodes except Po and search for the 1-input resubstitute candidates
-  Aig_ManForEachObj( pMan2, pObj, i )
+  Abc_NtkForEachObj( pNtk, pObj, i )
   {
-    if( !Aig_ObjIsCand( pObj ) ) continue; // only check for candidate of the circuit
+    if( !Abc_ObjIsCi( pObj ) && !Abc_ObjIsNode( pObj ) ) continue; // only check for candidate of the circuit
 
-    Aig_ManForEachObj( pMan2, pObj2, j )
+    Abc_NtkForEachObj( pNtk, pObj2, j )
     {
-      if( !Aig_ObjIsCand( pObj2 ) ) continue; // only check for candidate of the circuit
+      if( !Abc_ObjIsCi( pObj2 ) && !Abc_ObjIsNode( pObj2 ) ) continue; // only check for candidate of the circuit
       if( pObj == pObj2 ) continue;           // do not check the same object
 
       // check if pObj2 is pObj's transitive fanin
-      if( Aig_ObjIsCi( pObj2 ) && !Aig_ObjIsCi( pObj ) ) continue;
+      if( Abc_ObjIsCi( pObj2 ) && !Abc_ObjIsCi( pObj ) ) continue;
 
-      Aig_Obj_t *objs[] = { pObj };
-      Vec_Ptr_t *tfi    = Aig_ManDfsNodes( pMan2, objs, 1 );
+      Abc_Obj_t *objs[] = { pObj };
+      Vec_Ptr_t *tfi    = Abc_NtkDfsNodes( pNtk, objs, 1 );
 
       if( Vec_PtrFind( tfi, pObj2 ) != -1 )
       {
@@ -130,8 +130,8 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t *pNtk )
       // end check if pObj2 is pObj's transitive fanin
 
       // variable declaration
-      const int id1             = Aig_ObjId( pObj   );
-      const int id2             = Aig_ObjId( pObj2  );
+      const int id1             = Aig_ObjId( reinterpret_cast<Aig_Obj_t*>( Abc_ObjCopy( pObj )  ) );
+      const int id2             = Aig_ObjId( reinterpret_cast<Aig_Obj_t*>( Abc_ObjCopy( pObj2 ) ) );
       const int variable1       = pCnf2->pVarNums[id1];
       const int variable2       = pCnf2->pVarNums[id2];
       const int auxiliaryIndex  = offset + distance( unitAssumptionVar.begin(), unitAssumptionVar.find( id2 ) );
@@ -139,12 +139,12 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t *pNtk )
 
       // test for whether two node can have same value
       if( is1SubCondidate( pSat, variable1, variable2, auxiliaryIndex, lits, lits + litNum, false ) )
-        subCand[id2].push_back( pair<int,bool>( id1, false ) );
+        subCand[Abc_ObjId( pObj2 )].push_back( pair<int,bool>( Abc_ObjId( pObj ), false ) );
       // end test for whether two node can have same value
 
       // test for whether two node can have complement value
       if( is1SubCondidate( pSat, variable1, variable2, auxiliaryIndex, lits, lits + litNum, true ) )
-        subCand[id2].push_back( pair<int,bool>( id1, true ) );
+        subCand[Abc_ObjId( pObj2 )].push_back( pair<int,bool>( Abc_ObjId( pObj ), true ) );
       // end test for whether two node can have complement value
     }
   }
