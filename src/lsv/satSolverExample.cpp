@@ -134,21 +134,21 @@ static int addPoConstraints( sat_solver_t *pSat, Aig_Man_t *pMan1, Aig_Man_t *pM
 
   lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj  )], 0 );
   lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 1 );
-  sat_solver_addclause( pSat, lits, lits + 2 );
+  sat_solver_addclause( pSat, lits, lits + 3 );
 
   lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj  )], 1 );
   lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 0 );
-  sat_solver_addclause( pSat, lits, lits + 2 );
+  sat_solver_addclause( pSat, lits, lits + 3 );
 
   lits[2] = toLitCond( outVar, 1 );
 
   lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj  )], 0 );
   lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 0 );
-  sat_solver_addclause( pSat, lits, lits + 2 );
+  sat_solver_addclause( pSat, lits, lits + 3 );
 
   lits[0] = toLitCond( pCnf1->pVarNums[Aig_ObjId( pObj  )], 1 );
   lits[1] = toLitCond( pCnf2->pVarNums[Aig_ObjId( pObj2 )], 1 );
-  sat_solver_addclause( pSat, lits, lits + 2 );
+  sat_solver_addclause( pSat, lits, lits + 3 );
   // end add xor to the first Po of the two circuits
 
   return outVar;
