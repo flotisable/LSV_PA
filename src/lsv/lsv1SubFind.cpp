@@ -45,6 +45,7 @@ int   sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf );
 int   sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf, Aig_Man_t *pMan, map<int,int> &unitAssumptionVar );
 void  addPiConstraints  ( sat_solver *pSat, Aig_Man_t *pMan1, Aig_Man_t *pMan2, Cnf_Dat_t *pCnf1, Cnf_Dat_t *pCnf2, map<int,int> &unitAssumptionVar );
 void  addPoConstraints  ( sat_solver *pSat, Aig_Man_t *pMan1, Aig_Man_t *pMan2, Cnf_Dat_t *pCnf1, Cnf_Dat_t *pCnf2 );
+bool  isTfi             ( Abc_Ntk_t *pNtk, Abc_Obj_t *pNode, Abc_Obj_t *pTfiNode );
 bool  is1SubCondidate   ( sat_solver *pSat, int variable1, int variable2, int auxiliaryIndex, lit *lits, lit *litsEnd, bool complement );
 
 ////////////////////////////////////////////////////////////////////////
@@ -108,26 +109,15 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t *pNtk )
   // iterate all nodes except Po and search for the 1-input resubstitute candidates
   Abc_NtkForEachObj( pNtk, pObj, i )
   {
-    if( !Abc_ObjIsCi( pObj ) && !Abc_ObjIsNode( pObj ) ) continue; // only check for candidate of the circuit
+    if( !Abc_ObjIsCi( pObj ) && !Abc_ObjIsNode( pObj ) ) continue;
 
     Abc_NtkForEachObj( pNtk, pObj2, j )
     {
-      if( !Abc_ObjIsCi( pObj2 ) && !Abc_ObjIsNode( pObj2 ) ) continue; // only check for candidate of the circuit
-      if( pObj == pObj2 ) continue;           // do not check the same object
-
-      // check if pObj2 is pObj's transitive fanin
-      if( Abc_ObjIsCi( pObj2 ) && !Abc_ObjIsCi( pObj ) ) continue;
-
-      Abc_Obj_t *objs[] = { pObj };
-      Vec_Ptr_t *tfi    = Abc_NtkDfsNodes( pNtk, objs, 1 );
-
-      if( Vec_PtrFind( tfi, pObj2 ) != -1 )
-      {
-        Vec_PtrFree( tfi );
-        continue;
-      }
-      Vec_PtrFree( tfi );
-      // end check if pObj2 is pObj's transitive fanin
+      // precondition
+      if( pObj == pObj2 ) continue;
+      if( !Abc_ObjIsCi( pObj2 ) && !Abc_ObjIsNode( pObj2 ) ) continue;
+      if( isTfi( pNtk, pObj, pObj2 ) ) continue;
+      // end precondition
 
       // variable declaration
       const int id1             = Aig_ObjId( reinterpret_cast<Aig_Obj_t*>( Abc_ObjCopy( pObj )  ) );
@@ -227,8 +217,10 @@ int sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf, Aig_Man_t *pMan, map<
      Aig_Obj_t  *pObj;
      // end variables declaration
 
+     // add the original cnf clauses
      for( j = 0 ; j < litNum ; ++j )
         lits[j] = pCnf->pClauses[i][j];
+     // end add the original cnf clauses
 
      // find the output literal and create a mapping
      Aig_ManForEachNode( pMan, pObj, j )
@@ -236,7 +228,7 @@ int sat_solver_add_cnf( sat_solver *pSat, Cnf_Dat_t *pCnf, Aig_Man_t *pMan, map<
        if( lit_var( lits[0] ) != pCnf->pVarNums[Aig_ObjId( pObj )] ) continue;
 
        // variable declaration
-       map<int,int>::iterator it      = unitAssumptionVar.find( Aig_ObjId( pObj ) );
+       map<int,int>::iterator it    = unitAssumptionVar.find( Aig_ObjId( pObj ) );
        int                    var;
        // end variable declaration
 
@@ -289,7 +281,7 @@ void addPiConstraints( sat_solver *pSat, Aig_Man_t *pMan1, Aig_Man_t *pMan2, Cnf
   // the input of two circuits should be equivalent
   Aig_ManForEachCi( pMan1, pObj, i )
   {
-    int var = sat_solver_addvar( pSat );
+    const int var = sat_solver_addvar( pSat );
 
     pObj2 = Aig_ManCi( pMan2, i ); // get the corresponding Po in circuit 2
 
@@ -336,7 +328,7 @@ void addPoConstraints( sat_solver *pSat, Aig_Man_t *pMan1, Aig_Man_t *pMan2, Cnf
   // setup Po constraints
   Aig_ManForEachCo( pMan1, pObj, i )
   {
-    int var = sat_solver_addvar( pSat );
+    const int var = sat_solver_addvar( pSat );
 
     pObj2 = Aig_ManCo( pMan2, i ); // get the corresponding Po in circuit 2
 
@@ -363,7 +355,7 @@ void addPoConstraints( sat_solver *pSat, Aig_Man_t *pMan1, Aig_Man_t *pMan2, Cnf
     // end setup xor constraint
 
     // setup output or constraint
-    lits[0] = toLitCond( var, 1 );
+    lits[0] = toLitCond( var,       1 );
     lits[1] = toLitCond( outputVar, 0 );
     sat_solver_addclause( pSat, lits, lits + 2 );
     // end setup output or constraint
@@ -384,6 +376,34 @@ void addPoConstraints( sat_solver *pSat, Aig_Man_t *pMan1, Aig_Man_t *pMan2, Cnf
 
   delete[] outLits;
   // end if the output of miter is 1, the two circuits should be defferent
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+
+bool isTfi( Abc_Ntk_t *pNtk, Abc_Obj_t *pNode, Abc_Obj_t *pTfiNode )
+{
+  if( Abc_ObjIsCi( pTfiNode ) && !Abc_ObjIsCi( pNode ) ) return true;
+
+  Abc_Obj_t *objs[] = { pNode };
+  Vec_Ptr_t *tfi    = Abc_NtkDfsNodes( pNtk, objs, 1 );
+
+  if( Vec_PtrFind( tfi, pTfiNode ) != -1 )
+  {
+    Vec_PtrFree( tfi );
+    return true;
+  }
+  Vec_PtrFree( tfi );
+  return false;
 }
 
 /**Function*************************************************************
