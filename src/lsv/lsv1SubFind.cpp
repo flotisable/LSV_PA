@@ -28,7 +28,6 @@ extern "C"
 
 #include <map>
 #include <vector>
-#include <algorithm>
 using namespace std;
 
 ABC_NAMESPACE_IMPL_START
@@ -143,8 +142,8 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t *pNtk )
   // output answer
   for( size_t i = 0 ; i < subCand.size() ; ++i )
   {
+     if( subCand[i].empty() ) continue;
      Abc_Print( ABC_STANDARD, "%s:", Abc_ObjName( Abc_NtkObj( pNtk, i ) ) );
-     sort( subCand[i].begin(), subCand[i].end() );
 
      for( size_t j = 0 ; j < subCand[i].size() ; ++j )
      {
