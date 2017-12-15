@@ -97,8 +97,8 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t *pNtk )
 
   // initialize unit assumption literals
   const size_t            offset = 2;
-  const size_t            litNum = offset + unitAssumptionVar.size() + 1;
-  lit                     *lits  = new lit[litNum];
+  const size_t            litNum = offset + unitAssumptionVar.size();
+  lit                     *lits  = new lit[litNum+1];
   map<int,int>::iterator  it;
 
   for( it = unitAssumptionVar.begin(), i = 0 ; it != unitAssumptionVar.end() ; ++it, ++i )
