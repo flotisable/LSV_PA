@@ -158,8 +158,8 @@ void Lsv_Ntk1SubFind( Abc_Ntk_t *pNtk )
   // release memory
   delete[] lits;
   sat_solver_delete( pSat );
-  ABC_FREE( pCnf1 );
-  ABC_FREE( pCnf2 );
+  Cnf_DataFree( pCnf1 );
+  Cnf_DataFree( pCnf2 );
   Aig_ManStop( pMan1 );
   Aig_ManStop( pMan2 );
   Abc_NtkDelete( pNtk2 );
