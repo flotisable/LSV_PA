@@ -1,0 +1,12 @@
+#+TYP_TODO: Flotisable Shawpee NotAssigned | DONE
+* Interface
+** NotAssigned write the help desription of the command
+** Shawpee read circuit
+** Shawpee transtorm circuit to BDD
+** Shawpee dump BDD
+** Shawpee test
+* Core
+** Shawpee find the best BDD variable order to make the decomposition more disjoint
+** Flotisable check there are only two functions of y_1, y_2, y_3, y_4
+** Flotisable build the function of select input of MUX by the truth table of y's
+** Flotisable split the BDD into three sub circuit
