@@ -5,9 +5,9 @@
 // end mux decomposition interface functions
 
 // mux decomposition core functions
-void    muxDecompCore ( DdManager *dd, DdNode *f );
-bool    isMuxDecomp   ( DdManager *dd, DdNode *f );
-DdNode* buildS        ( DdManager *dd, DdNode *f );
+void    muxDecompCore ( DdManager *dd, DdNode *f  );
+bool    isMuxDecomp   ( DdNode *f                 );
+DdNode* buildS        ( DdManager *dd, DdNode *f  );
 // end mux decomposition core functions
 
 #endif
