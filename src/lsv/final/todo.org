@@ -7,6 +7,6 @@
 ** Shawpee test
 * Core
 ** Shawpee find the best BDD variable order to make the decomposition more disjoint
-** Flotisable check there are only two functions of y_1, y_2, y_3, y_4
+** DONE check there are only two functions of y_1, y_2, y_3, y_4
 ** Flotisable build the function of select input of MUX by the truth table of y's
 ** Flotisable split the BDD into three sub circuit
