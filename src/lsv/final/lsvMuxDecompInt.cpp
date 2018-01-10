@@ -31,6 +31,8 @@ ABC_NAMESPACE_IMPL_START
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
 
+int NtkTransToBdd( Abc_Ntk_t *pNtk );
+
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
 ////////////////////////////////////////////////////////////////////////
@@ -50,8 +52,35 @@ ABC_NAMESPACE_IMPL_START
 void
 Lsv_NtkMuxDecomp( Abc_Ntk_t * pNtk )
 {
-  if( !pNtk ) return; // preconsition
+	if( !pNtk )
+	{
+		Abc_Print( ABC_ERROR, "Empty Network!\n" );
+		return;
+	}
+	if( !NtkTransToBdd( pNtk ) )
+	{
+		Abc_Print( ABC_ERROR, "Covert Network to BDD failed\n" );
+	}
+
 }
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+
+int NtkTransToBdd( Abc_Ntk_t *pNtk )
+{
+	return Abc_NtkToBdd( pNtk );
+}
+
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////

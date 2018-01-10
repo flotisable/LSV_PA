@@ -246,30 +246,9 @@ Abc_CommandMuxDecomp( Abc_Frame_t * pAbc , int argc , char ** argv )
   // end process arguments
 
   // get the current network
-  pNtk = Abc_FrameReadNtk( pAbc );
-
-  if( !pNtk )
-  {
-    Abc_Print( ABC_ERROR, "Empty network.\n" );
-    return 1;
-  }
-  // end get the current network
-
-  // check whether the current network is strashed
-  if( !Abc_NtkIsStrash( pNtk ) )
-  {
-    const int fAllNodes = 0;
-    const int fCleanup  = 1;
-    const int fRecord   = 0;
-
-    pNtk = Abc_NtkStrash( pNtk, fAllNodes, fCleanup, fRecord );
-
+	pNtk = Abc_FrameReadNtk( pAbc );
     Lsv_NtkMuxDecomp( pNtk );
     Abc_NtkDelete( pNtk );
-  }
-  else
-    Lsv_NtkMuxDecomp( pNtk );
-  // end check whether the current network is strashed
   return 0;
 
 usage:
