@@ -1,8 +1,8 @@
 #+TYP_TODO: Flotisable Shawpee NotAssigned | DONE
 * Interface
 ** NotAssigned write the help desription of the command
-** DONE Shawpee read circuit
-** DONE Shawpee transtorm circuit to BDD
+** DONE read circuit
+** DONE transtorm circuit to BDD
 ** Shawpee dump BDD
 ** Shawpee test
 * Core
