@@ -1,5 +1,5 @@
 #include "testLsvMuxDecomp.h"
-#include "../lsvMuxDecomp.h"
+#include "../../lsvMuxDecomp.h"
 
 #include <iostream>
 #include <string>

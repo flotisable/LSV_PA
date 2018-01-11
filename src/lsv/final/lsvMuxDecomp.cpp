@@ -21,7 +21,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 #ifdef TEST
-#include "Test/testLsvMuxDecomp.h"
+#include "Test/LsvMuxDeomp/testLsvMuxDecomp.h"
 #else
 #include "base/main/mainInt.h"
 #include "lsvMuxDecomp.h"

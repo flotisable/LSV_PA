@@ -3,7 +3,7 @@ LD       := g++
 CXXFLAGS := -std=c++11 -DTEST=1
 PROG     := testMuxDecompCore
 
-projectDir := ..
+projectDir := ../..
 
 all: $(PROG)
 
