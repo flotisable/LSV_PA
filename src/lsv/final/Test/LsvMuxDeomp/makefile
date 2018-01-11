@@ -23,4 +23,4 @@ test: $(PROG)
 	./$(PROG)
 
 clean:
-	rm *.o $(PROG)
+	rm $(projectDir)/*.o *.o $(PROG)
