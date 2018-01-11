@@ -1,6 +1,6 @@
 CXX      := g++
 LD       := g++
-CXXFLAGS := -std=c++11
+CXXFLAGS := -std=c++11 -DTEST=1
 PROG     := testMuxDecompCore
 
 projectDir := ..
@@ -16,7 +16,7 @@ main.o: main.cpp testLsvMuxDecomp.h
 testLsvMuxDecomp.o: testLsvMuxDecomp.cpp testLsvMuxDecomp.h $(projectDir)/lsvMuxDecomp.h
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-$(projectDir)/lsvMuxDecomp.o: $(projectDir)/lsvMuxDecomp.cpp $(projectDir)/lsvMuxDecomp.h
+$(projectDir)/lsvMuxDecomp.o: $(projectDir)/lsvMuxDecomp.cpp $(projectDir)/lsvMuxDecomp.h testLsvMuxDecomp.h
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 test: $(PROG)

@@ -4,13 +4,19 @@
 #include <vector>
 #include <string>
 using std::vector;
+using std::string;
 
 bool assert( bool expression, const string &errorTitle, const string &correctResult, const string &programResult );
+
+void testIsMuxDecomp();
 
 struct DdNode
 {
   DdNode *thenNode = nullptr;
   DdNode *elseNode = nullptr;
+
+  DdNode() = default;
+  DdNode( DdNode *thenNode, DdNode *elseNode ) : thenNode{ thenNode }, elseNode{ elseNode } {}
 };
 
 DdNode *Cudd_T( DdNode *f );
@@ -25,4 +31,7 @@ Vec_Ptr_t*  Vec_PtrAlloc      ( int capacity                  );
 void        Vec_PtrPushUnique ( Vec_Ptr_t *pVec, DdNode *node );
 size_t      Vec_PtrSize       ( Vec_Ptr_t *pVec               );
 void        Vec_PtrFree       ( Vec_Ptr_t *pVec               );
+
+struct DdManager {};
+
 #endif

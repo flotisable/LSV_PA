@@ -20,9 +20,14 @@
 ///                          INCLUDES                                ///
 ////////////////////////////////////////////////////////////////////////
 
+#ifdef TEST
+#include "Test/testLsvMuxDecomp.h"
+#else
 #include "base/main/mainInt.h"
+#include "lsvMuxDecomp.h"
 
 ABC_NAMESPACE_IMPL_START
+#endif
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -101,6 +106,7 @@ DdNode* buildS( DdManager *dd, DdNode *f )
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
 
-
+#ifndef TEST
 ABC_NAMESPACE_IMPL_END
+#endif
 

@@ -1,6 +1,7 @@
 #include "testLsvMuxDecomp.h"
 #include "../lsvMuxDecomp.h"
 
+#include <iostream>
 #include <string>
 using namespace std;
 
@@ -11,9 +12,9 @@ void testIsMuxDecomp()
   const string errorTitle = "Is Mux Decomp Error";
 
   DdNode  node[3];
-  DdNode  fA      = { &node[0], nullptr };
-  DdNode  fB      = { &node[0], &node[1] };
-  DdNode  f       = { &fA, &fB };
+  DdNode  fA = { &node[0], &node[1] };
+  DdNode  fB = { &node[0], &node[1] };
+  DdNode  f  = { &fA, &fB };
   bool    result;
 
   const vector<bool>    correctResult = { true, false };
@@ -21,14 +22,14 @@ void testIsMuxDecomp()
 
   for( size_t i = 0 ; i < pattern.size() ; ++i )
   {
-     fA->thenNode = pattern[i];
+     fA.thenNode  = pattern[i];
      result       = isMuxDecomp( &f );
 
-     bool expression = ( result == correctResult );
+     bool expression = ( result == correctResult[i] );
 
-     if( !assert( expression, errorTitle, to_string( correctResult ), to_string( result ) ) ) return;
+     if( !assert( expression, errorTitle, to_string( correctResult[i] ), to_string( result ) ) ) return;
   }
-  cout << "is mux decomp test pass";
+  cout << "is mux decomp test pass\n";
 }
 
 bool assert( bool expression, const string &errorTitle, const string &correctResult, const string &programResult )
@@ -37,16 +38,16 @@ bool assert( bool expression, const string &errorTitle, const string &correctRes
   {
     cerr << "[ " << errorTitle << " ]\n";
     cerr << "correct result: " << correctResult << "\n";
-    cerr << "program result: " << correctResult << "\n";
+    cerr << "program result: " << programResult << "\n";
     return false;
   }
-  return true
+  return true;
 }
 
-DdNode *Cudd_T( DdNode *f ) { DdNode->thenNode; }
-DdNode *Cudd_E( DdNode *f ) { DdNode->elseNode; }
+DdNode *Cudd_T( DdNode *f ) { return f->thenNode; }
+DdNode *Cudd_E( DdNode *f ) { return f->elseNode; }
 
-Vec_Ptr_t*  Vec_PtrAlloc      ( int capacity                  ) { return new Vec_Ptr_t*; }
+Vec_Ptr_t*  Vec_PtrAlloc      ( int capacity                  ) { return new Vec_Ptr_t; }
 void        Vec_PtrPushUnique ( Vec_Ptr_t *pVec, DdNode *node )
 {
   for( DdNode *test : pVec->vec  )
