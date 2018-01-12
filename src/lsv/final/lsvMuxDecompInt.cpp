@@ -57,7 +57,7 @@ Lsv_NtkMuxDecomp( Abc_Ntk_t * pNtk )
 		Abc_Print( ABC_ERROR, "Empty Network!\n" );
 		return;
 	}
-	if( !NtkTransToBdd( pNtk ) )
+	if( NtkTransToBdd( pNtk ) )
 	{
 		Abc_Print( ABC_ERROR, "Covert Network to BDD failed\n" );
 	}
@@ -78,7 +78,44 @@ Lsv_NtkMuxDecomp( Abc_Ntk_t * pNtk )
 
 int NtkTransToBdd( Abc_Ntk_t *pNtk )
 {
-	return Abc_NtkToBdd( pNtk );
+	Abc_Ntk_t *pNtkRes;
+    int fVerbose;
+    int fBddSizeMax;
+    int fDualRail;
+    int fReorder;
+
+    // set defaults
+    fVerbose = 0;
+    fReorder = 1;
+    fDualRail = 0;
+    fBddSizeMax = ABC_INFINITY;
+    
+
+    if ( !Abc_NtkIsLogic(pNtk) && !Abc_NtkIsStrash(pNtk) )
+    {
+        Abc_Print( -1, "Can only collapse a logic network or an AIG.\n" );
+        return 1;
+    }
+
+    // get the new network
+    if ( Abc_NtkIsStrash(pNtk) )
+        pNtkRes = Abc_NtkCollapse( pNtk, fBddSizeMax, fDualRail, fReorder, fVerbose );
+    else
+    {
+        pNtk = Abc_NtkStrash( pNtk, 0, 0, 0 );
+        pNtkRes = Abc_NtkCollapse( pNtk, fBddSizeMax, fDualRail, fReorder, fVerbose );
+        Abc_NtkDelete( pNtk );
+    }
+    if ( pNtkRes == NULL )
+    {
+        Abc_Print( -1, "Collapsing has failed.\n" );
+        return 1;
+    }
+    // replace the current network
+    //Abc_FrameReplaceCurrentNetwork( pAbc, pNtkRes );
+    pNtk = pNtkRes;
+	return 0;
+
 }
 
 ////////////////////////////////////////////////////////////////////////
