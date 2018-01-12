@@ -7,9 +7,9 @@ struct DdManager;
 // end mux decomposition interface functions
 
 // mux decomposition core functions
-void    muxDecompCore ( DdManager *dd, DdNode *f  );
-bool    isMuxDecomp   ( DdNode *f                 );
-DdNode* buildS        ( DdManager *dd, DdNode *f  );
+Vec_Ptr_t*  muxDecompCore ( DdManager *dd, DdNode *f                    );
+bool        isMuxDecomp   ( DdNode *f                                   );
+DdNode*     buildS        ( DdManager *dd, DdNode *f, DdNode *currentS  );
 // end mux decomposition core functions
 
 #endif
