@@ -40,6 +40,7 @@ enum FuncIndex
   func_b,
   func_num
 };
+
 enum NodeValue
 {
   value_ee = 8, // 1000
@@ -160,6 +161,8 @@ bool isMuxDecomp( DdNode *f )
 ***********************************************************************/
 DdNode* buildS( DdManager *dd, DdNode *f, DdNode *currentS )
 {
+  if( Cudd_SupportSize( dd, f ) < 2 ) return NULL; // precondition
+
   // variable declarations
   DdNode *fa  = Cudd_E( f );
   DdNode *fb  = Cudd_T( f );
