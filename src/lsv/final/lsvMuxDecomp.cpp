@@ -33,6 +33,13 @@ ABC_NAMESPACE_IMPL_START
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
 
+enum FuncIndex
+{
+  func_s,
+  func_a,
+  func_b,
+  func_num
+};
 enum NodeValue
 {
   value_ee = 8, // 1000
@@ -49,15 +56,61 @@ enum NodeValue
 
   Synopsis    []
 
-  Description []
+  Description [return the decomposed fs, fa, fb. the memory should be managed by the caller.]
 
   SideEffects []
 
   SeeAlso     []
 
 ***********************************************************************/
-void muxDecompCore( DdManager *dd, DdNode *f )
+Vec_Ptr_t* muxDecompCore( DdManager *dd, DdNode *f )
 {
+  // variables declarations
+  Vec_Ptr_t *pFunc  = Vec_PtrAlloc( func_num );
+  DdNode    *topVar = NULL;
+  // end variables declarations
+
+  // initialize current functions
+  Vec_PtrPush( pFunc, Cudd_bddIthVar( dd, Cudd_NodeReadIndex( f ) ) );  // fs
+  Vec_PtrPush( pFunc, Cudd_E( f )                                   );  // fa
+  Vec_PtrPush( pFunc, Cudd_T( f )                                   );  // fb
+  // end initialize current functions
+
+  while( isMuxDecomp( f ) )
+  {
+    // variables declarations
+    DdNode *fs = buildS( dd, f, ( DdNode* )Vec_PtrEntry( pFunc, func_s ) );
+
+    if( !fs ) break;
+
+    DdNode *fa = Cudd_E( Cudd_E( f ) ); // 00
+    DdNode *fb = NULL;
+    // end variables declarations
+
+    // find fb
+    if      ( Cudd_T( Cudd_E( f ) ) != fa ) fb = Cudd_T( Cudd_E( f ) ); // 01
+    else if ( Cudd_E( Cudd_T( f ) ) != fa ) fb = Cudd_E( Cudd_T( f ) ); // 10
+    else if ( Cudd_T( Cudd_T( f ) ) != fa ) fb = Cudd_T( Cudd_T( f ) ); // 11
+    // end find fb
+
+    // deal the reference
+    Cudd_Ref            ( fs    );
+    Cudd_Ref            ( fa    );
+    Cudd_Ref            ( fb    );
+    Cudd_RecursiveDeref ( dd, f );
+    // end deal the reference
+
+    if( !topVar ) topVar = Cudd_bddNewVar( dd );
+
+    // set current functions
+    Vec_PtrWriteEntry( pFunc, func_s, fs );
+    Vec_PtrWriteEntry( pFunc, func_a, fa );
+    Vec_PtrWriteEntry( pFunc, func_b, fb );
+    // end set current functions
+
+    f = Cudd_bddOr( dd, Cudd_bddAnd( dd, fa, Cudd_Not( topVar ) ), Cudd_bddAnd( dd, fb, topVar ) ); //  create new mux decomposed circuit
+  }
+  return pFunc;
 }
 
 /**Function*************************************************************
