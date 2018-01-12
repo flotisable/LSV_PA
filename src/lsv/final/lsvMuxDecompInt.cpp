@@ -25,6 +25,7 @@ extern "C"
 #include "base/main/mainInt.h"
 }
 
+#include "base/abci/abcMulti.c"
 ABC_NAMESPACE_IMPL_START
 
 ////////////////////////////////////////////////////////////////////////
@@ -118,6 +119,43 @@ int NtkTransToBdd( Abc_Ntk_t *pNtk )
 
 }
 
+int Cecsat(Abc_Ntk_t * pNtk, Abc_Ntk_t * pNtk2) {
+	extern Abc_Ntk_t * Abc_NtkMulti( Abc_Ntk_t * pNtk, int nThresh, int nFaninMax, int fCnf, int fMulti, int fSimple, int fFactor );
+	Abc_Ntk_t * pMiter;
+	Abc_Ntk_t * pCnf;
+	int RetValue;
+	pMiter = Abc_NtkMiter( pNtk, pNtk2, 1, 0, 0, 0 );
+	if(pMiter == NULL) {
+		//printf("GG");
+		return 0;
+	}
+	RetValue = Abc_NtkMiterIsConstant( pMiter );
+	if ( RetValue == 0 ) {
+		//printf( "Networks are NOT EQUIVALENT after structural hashing.\n" );
+		ABC_FREE( pMiter->pModel );
+		Abc_NtkDelete( pMiter );
+		return 1;
+	}
+	if( RetValue == 1 ) {
+		Abc_NtkDelete( pMiter );
+		//printf("equivalent after structural hashing.\n");
+		return 1;
+	}
+	else if(RetValue == -1) {
+		pCnf = Abc_NtkMulti( pMiter, 0, 100, 1, 0, 0, 0 );
+		Abc_NtkDelete( pMiter );
+		if ( pCnf == NULL ) {
+			return 0;
+		}
+		RetValue = Abc_NtkMiterSat( pCnf, 0, 0, 0, NULL, NULL );
+		ABC_FREE( pCnf->pModel );	
+	}
+	Abc_NtkDelete( pCnf );
+	if(RetValue == -1 || RetValue == 0)
+		return 0;
+	else
+		return 1;
+}
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////
