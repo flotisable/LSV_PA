@@ -20,12 +20,12 @@
 ///                          INCLUDES                                ///
 ////////////////////////////////////////////////////////////////////////
 
-#include "lsvMuxDecomp.h"
-
 #ifdef TEST
 #include "Test/LsvMuxDeomp/testLsvMuxDecomp.h"
 #else
 #include "base/main/mainInt.h"
+#include "lsvMuxDecomp.h"
+
 
 ABC_NAMESPACE_IMPL_START
 #endif
@@ -50,6 +50,8 @@ enum NodeValue
   value_tt = 1  // 0001
 };
 
+bool        isMuxDecomp   ( DdNode *f                                   );
+DdNode*     buildS        ( DdManager *dd, DdNode *f, DdNode *currentS  );
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
 ////////////////////////////////////////////////////////////////////////
