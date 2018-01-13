@@ -55,6 +55,14 @@ int NtkTransToBdd( Abc_Ntk_t *pNtk );
 void
 Lsv_NtkMuxDecomp( Abc_Ntk_t * pNtk )
 {
+	Vec_Ptr_t *pFunc;
+	DdManager *dd;
+	DdNode *OriFunc, *TestFunc;
+	int nBddSizeMax = ABC_INFINITY;
+	int fDropInternal = 1;
+	int fReorder = 0;
+	int fVerbose = 1;
+
 	if( !pNtk )
 	{
 		Abc_Print( ABC_ERROR, "Empty Network!\n" );
@@ -64,9 +72,34 @@ Lsv_NtkMuxDecomp( Abc_Ntk_t * pNtk )
 	{
 		Abc_Print( ABC_ERROR, "Covert Network to BDD failed\n" );
 	}
-
+	
+	//derive DdManager
+	dd = ( DdManager* )Abc_NtkBuildGlobalBdds ( pNtk, nBddSizeMax, fDropInternal, fReorder, fVerbose);
+	OriFunc =  (DdNode *)Abc_ObjGlobalBdd( Abc_NtkPo( pNtk , 0 ) );
+	pFunc = muxDecompCore( dd, OriFunc );
+	TestFunc = DumpBdd ( dd, pFunc );
+	if ( BddCec( OriFunc, TestFunc ) )	
+		printf("success!\n");
+	else
+		printf("failed!!\n");
 }
 
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+
+int BddCec( DdNode* a, DdNode* b)
+{
+	return a == b;
+}
 /**Function*************************************************************
 
   Synopsis    []

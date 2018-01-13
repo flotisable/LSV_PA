@@ -12,6 +12,7 @@ enum FuncIndex
 // end the index of fa, fb, fs in the returned vector of muxDecompCore
 
 // mux decomposition interface functions
+int			BddCec		  ( DdNode* a, DdNode* b						);
 int			NtkTransToBdd ( Abc_Ntk_t *pNtk								);
 int			Cecsat		  ( Abc_Ntk_t * pNtk, Abc_Ntk_t * pNtk2			);
 DdNode*		DumpBdd		  ( DdManager *dd, Vec_Ptr_t *pFunc				);
