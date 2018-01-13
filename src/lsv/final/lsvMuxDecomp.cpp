@@ -24,23 +24,16 @@
 #include "Test/LsvMuxDeomp/testLsvMuxDecomp.h"
 #else
 #include "base/main/mainInt.h"
+#endif
 #include "lsvMuxDecomp.h"
 
-
+#ifndef TEST
 ABC_NAMESPACE_IMPL_START
 #endif
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
 ////////////////////////////////////////////////////////////////////////
-
-enum FuncIndex
-{
-  func_s,
-  func_a,
-  func_b,
-  func_num
-};
 
 enum NodeValue
 {
@@ -50,8 +43,6 @@ enum NodeValue
   value_tt = 1  // 0001
 };
 
-bool        isMuxDecomp   ( DdNode *f                                   );
-DdNode*     buildS        ( DdManager *dd, DdNode *f, DdNode *currentS  );
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
 ////////////////////////////////////////////////////////////////////////
