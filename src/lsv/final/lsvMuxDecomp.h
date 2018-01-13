@@ -2,6 +2,8 @@
 #define LSV_MUX_DECOMP_H
 
 struct DdManager;
+struct DdNode;
+struct Vec_Ptr_t;
 
 // mux decomposition interface functions
 // end mux decomposition interface functions

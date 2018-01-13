@@ -20,11 +20,12 @@
 ///                          INCLUDES                                ///
 ////////////////////////////////////////////////////////////////////////
 
+#include "lsvMuxDecomp.h"
+
 #ifdef TEST
 #include "Test/LsvMuxDeomp/testLsvMuxDecomp.h"
 #else
 #include "base/main/mainInt.h"
-#include "lsvMuxDecomp.h"
 
 ABC_NAMESPACE_IMPL_START
 #endif

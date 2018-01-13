@@ -166,6 +166,8 @@ DdNode* Cudd_bddAnd( DdManager *dd, DdNode *f, DdNode *g )
   f->thenC    = false;
   f->elseNode = dd->f;
   f->elseC    = false;
+
+  return f;
 }
 
 DdNode* Cudd_bddXor( DdManager *dd, DdNode *f, DdNode *g )
@@ -174,6 +176,8 @@ DdNode* Cudd_bddXor( DdManager *dd, DdNode *f, DdNode *g )
   f->thenC    = true;
   f->elseNode = g;
   f->elseC    = false;
+
+  return f;
 }
 
 DdNode* Cudd_bddOr( DdManager *dd, DdNode *f, DdNode *g )
@@ -182,8 +186,13 @@ DdNode* Cudd_bddOr( DdManager *dd, DdNode *f, DdNode *g )
   f->elseC    = false;
   f->thenNode = dd->t;
   f->thenC    = false;
+
+  return f;
 }
 
+DdNode*       Cudd_bddNewVar( DdManager *dd ) { return nullptr; }
+void          Cudd_Ref( DdNode *node ) {}
+void          Cudd_RecursiveDeref( DdManager *dd, DdNode *node ) {}
 int Abc_MinInt( int a, int b ) { return ( a < b ) ? a: b; }
 // end bdd model
 
@@ -199,5 +208,8 @@ void        Vec_PtrPushUnique ( Vec_Ptr_t *pVec, DdNode *node )
 
 size_t  Vec_PtrSize( Vec_Ptr_t *pVec ) { return pVec->vec.size(); }
 void    Vec_PtrFree( Vec_Ptr_t *pVec ) { delete pVec;             }
+void    Vec_PtrPush       ( Vec_Ptr_t *pVec, DdNode *node             ) {}
+DdNode* Vec_PtrEntry      ( Vec_Ptr_t *pVec, int    i                 ) { return nullptr; }
+void    Vec_PtrWriteEntry ( Vec_Ptr_t *pVec, int    i, DdNode *entry  ) {}
 // end vector model
 // abstract model
