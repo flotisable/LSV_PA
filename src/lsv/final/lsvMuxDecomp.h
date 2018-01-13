@@ -4,6 +4,8 @@
 struct DdManager;
 
 // mux decomposition interface functions
+int			NtkTransToBdd ( Abc_Ntk_t *pNtk								);
+int			Cecsat		  ( Abc_Ntk_t * pNtk, Abc_Ntk_t * pNtk2			);
 // end mux decomposition interface functions
 
 // mux decomposition core functions
