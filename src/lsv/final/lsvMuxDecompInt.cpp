@@ -119,6 +119,18 @@ int NtkTransToBdd( Abc_Ntk_t *pNtk )
 
 }
 
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+
 int Cecsat(Abc_Ntk_t * pNtk, Abc_Ntk_t * pNtk2) {
 	extern Abc_Ntk_t * Abc_NtkMulti( Abc_Ntk_t * pNtk, int nThresh, int nFaninMax, int fCnf, int fMulti, int fSimple, int fFactor );
 	Abc_Ntk_t * pMiter;
@@ -155,6 +167,27 @@ int Cecsat(Abc_Ntk_t * pNtk, Abc_Ntk_t * pNtk2) {
 		return 0;
 	else
 		return 1;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+
+DdNode* DumpBdd ( DdManager *dd, Vec_Ptr_t *pFunc )
+{
+	DdNode *fs = Vec_PtrEntry( pFunc, func_s );
+	DdNode *fa = Vec_PtrEntry( pFunc, func_a );
+	DdNode *fb = Vec_PtrEntry( pFunc, func_b );
+	
+    return Cudd_bddOr( dd, Cudd_bddAnd( dd, fa, Cudd_Not( fs ) ), Cudd_bddAnd( dd, fb, fs ) ); //  create new mux decomposed circuit
 }
 
 ////////////////////////////////////////////////////////////////////////
