@@ -20,8 +20,9 @@ DdNode*		DumpBdd		  ( DdManager *dd, Vec_Ptr_t *pFunc				);
 
 // mux decomposition core functions
 Vec_Ptr_t*  muxDecompCore ( DdManager *dd, DdNode *f                    );
-bool        isMuxDecomp   ( DdNode *f                                   );
+bool        isMuxDecomp   ( DdManager *dd, DdNode *f                                   );
 DdNode*     buildS        ( DdManager *dd, DdNode *f, DdNode *currentS  );
+DdNode*		CheckChild	  ( DdManager *dd, DdNode* f, int type							);
 // end mux decomposition core functions
 
 #endif

@@ -77,6 +77,14 @@ Lsv_NtkMuxDecomp( Abc_Ntk_t * pNtk )
 	//derive DdManager
 	pNtk = Abc_NtkStrash( pNtk, 0, 0, 0 );
 	dd = ( DdManager* )Abc_NtkBuildGlobalBdds ( pNtk, nBddSizeMax, fDropInternal, fReorder, fVerbose);
+	Cudd_bddNewVar( dd );
+	int order_array[Cudd_ReadSize(dd)];
+    order_array[0] = Cudd_ReadSize( dd ) - 1;
+    for (int i=1; i<Cudd_ReadSize( dd ); ++i)
+    {
+	  order_array[i] = i-1;
+    }
+	Cudd_ShuffleHeap( dd, order_array);
 	OriFunc =  (DdNode *)Abc_ObjGlobalBdd( Abc_NtkPo( pNtk , 0 ) );
 	pFunc = muxDecompCore( dd, OriFunc );
 	TestFunc = DumpBdd ( dd, pFunc );
@@ -88,6 +96,13 @@ Lsv_NtkMuxDecomp( Abc_Ntk_t * pNtk )
 		printf("success!\n");
 	else
 		printf("failed!!\n");
+	FILE *pFile;
+	char FileNameDot[100];
+	sprintf( FileNameDot, "dumpdot-ori-test");
+	if ( (pFile = fopen( FileNameDot, "w" )) == NULL )
+		printf("open failed!\n");
+	DdNode* DumpArray[] = {OriFunc, TestFunc};
+	Cudd_DumpDot( dd, 2, DumpArray, NULL, NULL, pFile );
 
 	//free memory
 	Vec_PtrFree( pFunc );
