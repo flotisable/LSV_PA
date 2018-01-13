@@ -248,7 +248,7 @@ Abc_CommandMuxDecomp( Abc_Frame_t * pAbc , int argc , char ** argv )
   // get the current network
 	pNtk = Abc_FrameReadNtk( pAbc );
     Lsv_NtkMuxDecomp( pNtk );
-    Abc_NtkDelete( pNtk );
+    //Abc_NtkDelete( pNtk );
   return 0;
 
 usage:

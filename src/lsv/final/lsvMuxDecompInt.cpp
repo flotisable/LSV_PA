@@ -68,12 +68,14 @@ Lsv_NtkMuxDecomp( Abc_Ntk_t * pNtk )
 		Abc_Print( ABC_ERROR, "Empty Network!\n" );
 		return;
 	}
+	/*
 	if( NtkTransToBdd( pNtk ) )
 	{
 		Abc_Print( ABC_ERROR, "Covert Network to BDD failed\n" );
 	}
-	
+	*/
 	//derive DdManager
+	pNtk = Abc_NtkStrash( pNtk, 0, 0, 0 );
 	dd = ( DdManager* )Abc_NtkBuildGlobalBdds ( pNtk, nBddSizeMax, fDropInternal, fReorder, fVerbose);
 	OriFunc =  (DdNode *)Abc_ObjGlobalBdd( Abc_NtkPo( pNtk , 0 ) );
 	pFunc = muxDecompCore( dd, OriFunc );
@@ -82,6 +84,9 @@ Lsv_NtkMuxDecomp( Abc_Ntk_t * pNtk )
 		printf("success!\n");
 	else
 		printf("failed!!\n");
+
+	//free memory
+	Vec_PtrFree( pFunc );
 }
 
 /**Function*************************************************************
