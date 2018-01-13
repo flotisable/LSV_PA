@@ -15,6 +15,8 @@ void testBuildS     ();
 
 // abstract model
 // bdd model
+struct DdNode;
+
 struct DdManager
 {
   DdNode *top;
