@@ -2,7 +2,8 @@
 
 int main()
 {
-  testIsMuxDecomp();
+  testIsMuxDecomp ();
+  testBuildS      ();
 
   return 0;
 }

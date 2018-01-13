@@ -1,7 +1,15 @@
 #ifndef LSV_MUX_DECOMP_H
 #define LSV_MUX_DECOMP_H
 
-struct DdManager;
+// the index of fa, fb, fs in the returned vector of muxDecompCore
+enum FuncIndex
+{
+  func_s,
+  func_a,
+  func_b,
+  func_num
+};
+// end the index of fa, fb, fs in the returned vector of muxDecompCore
 
 // mux decomposition interface functions
 int			NtkTransToBdd ( Abc_Ntk_t *pNtk								);
