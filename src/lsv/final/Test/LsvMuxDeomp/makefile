@@ -1,6 +1,6 @@
 CXX      := g++
 LD       := g++
-CXXFLAGS := -std=c++11 -DTEST=1
+CXXFLAGS := -std=c++11 -DTEST=1 -g
 PROG     := testMuxDecompCore
 
 projectDir := ../..
