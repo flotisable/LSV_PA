@@ -73,6 +73,7 @@ Vec_Ptr_t* muxDecompCore( DdManager *dd, DdNode *f )
 
   while( isMuxDecomp( f ) )
   {
+	  printf("enter!\n");
     // variables declarations
     DdNode *fs = buildS( dd, f, ( DdNode* )Vec_PtrEntry( pFunc, func_s ) );
 
@@ -124,11 +125,16 @@ bool isMuxDecomp( DdNode *f )
   // variable declarations
   DdNode *fa  = Cudd_T( f  );
   DdNode *fb  = Cudd_E( f  );
-  DdNode *y[] = { Cudd_T( fa ), Cudd_E( fa ), Cudd_T( fb ), Cudd_E( fb ) };
+  DdNode *y[4];
 
+  y[0] = Cudd_IsConstant( fa ) ? fa : Cudd_T( fa ) ;
+  y[1] = Cudd_IsConstant( fa ) ? fa : Cudd_E( fa ) ;
+  y[2] = Cudd_IsConstant( fb ) ? fb : Cudd_T( fb ) ;
+  y[3] = Cudd_IsConstant( fb ) ? fb : Cudd_E( fb ) ; 
+	
   Vec_Ptr_t *pSet = Vec_PtrAlloc( 3 );
   // end variable declarations
-
+	printf("fa_T: %p, fa_E: %p, fb_T: %p, fb_E: %p", y[0], y[1], y[2], y[3]);
   for( int i = 0 ; i < 4 ; ++i )
   {
      Vec_PtrPushUnique( pSet, y[i] );

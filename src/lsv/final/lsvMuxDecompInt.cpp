@@ -80,6 +80,10 @@ Lsv_NtkMuxDecomp( Abc_Ntk_t * pNtk )
 	OriFunc =  (DdNode *)Abc_ObjGlobalBdd( Abc_NtkPo( pNtk , 0 ) );
 	pFunc = muxDecompCore( dd, OriFunc );
 	TestFunc = DumpBdd ( dd, pFunc );
+	
+	DdNode *fs = (DdNode*)Vec_PtrEntry( pFunc, func_s );
+	int TestFuncSupSize = Cudd_SupportSize( dd, fs );
+	printf("TestFuncSupSize = %d\n", TestFuncSupSize);
 	if ( BddCec( OriFunc, TestFunc ) )	
 		printf("success!\n");
 	else
