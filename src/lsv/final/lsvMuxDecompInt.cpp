@@ -26,6 +26,8 @@ extern "C"
 }
 
 #include "base/abci/abcMulti.c"
+#include "lsvMuxDecomp.h"
+
 ABC_NAMESPACE_IMPL_START
 
 ////////////////////////////////////////////////////////////////////////
@@ -183,9 +185,9 @@ int Cecsat(Abc_Ntk_t * pNtk, Abc_Ntk_t * pNtk2) {
 
 DdNode* DumpBdd ( DdManager *dd, Vec_Ptr_t *pFunc )
 {
-	DdNode *fs = Vec_PtrEntry( pFunc, func_s );
-	DdNode *fa = Vec_PtrEntry( pFunc, func_a );
-	DdNode *fb = Vec_PtrEntry( pFunc, func_b );
+	DdNode *fs = (DdNode*)Vec_PtrEntry( pFunc, func_s );
+	DdNode *fa = (DdNode*)Vec_PtrEntry( pFunc, func_a );
+	DdNode *fb = (DdNode*)Vec_PtrEntry( pFunc, func_b );
 	
     return Cudd_bddOr( dd, Cudd_bddAnd( dd, fa, Cudd_Not( fs ) ), Cudd_bddAnd( dd, fb, fs ) ); //  create new mux decomposed circuit
 }
