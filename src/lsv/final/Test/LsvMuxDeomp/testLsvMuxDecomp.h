@@ -28,17 +28,16 @@ struct DdManager
 
 struct DdNode
 {
-  DdNode  *thenNode   = nullptr;
-  DdNode  *elseNode   = nullptr;
-  bool    thenC       = false;
-  bool    elseC       = false;
-  bool    complement  = false;
+  DdNode  *thenNode = nullptr;
+  DdNode  *elseNode = nullptr;
   int     index;
 
   DdNode() = default;
   DdNode( DdNode *thenNode, DdNode *elseNode ) : thenNode{ thenNode }, elseNode{ elseNode } {}
 };
 
+DdNode*       Cudd_Regular( DdNode *node );
+bool          Cudd_IsComplement( DdNode *node );
 DdNode*       Cudd_T  ( DdNode *node );
 DdNode*       Cudd_E  ( DdNode *node );
 DdNode*       Cudd_Not( DdNode *node );

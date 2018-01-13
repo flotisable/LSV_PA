@@ -178,9 +178,9 @@ DdNode* buildS( DdManager *dd, DdNode *f, DdNode *currentS )
 
   // select the truth table value of y
   // use y[0] as reference and y[0] is 0
-  if( y[1] == y[0] ) value += value_et;
-  if( y[2] == y[0] ) value += value_te;
-  if( y[3] == y[0] ) value += value_tt;
+  if( y[1] != y[0] ) value += value_et;
+  if( y[2] != y[0] ) value += value_te;
+  if( y[3] != y[0] ) value += value_tt;
   // end select the truth table value of y
 
   // build fs

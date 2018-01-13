@@ -41,18 +41,18 @@ void testBuildS()
   DdNode    fa;
   DdNode    fb;
   DdManager dd;
-  DdNode    top = { &fa, &fb };
+  DdNode    top     = { &fb, &fa };
   DdNode    t;
-  DdNode    f;
-  DdNode    node[2] = { { &t, &f }, { &t, &f } };
+  DdNode    *f      = Cudd_Not( &t );
+  DdNode    node[2] = { { &t, f }, { &t, f } };
   DdNode    *s;
 
   const vector<vector<DdNode*>> correctResult =
     {
       //00  01  10  11
-      { &f, &f, &f, &t },  // and
-      { &f, &t, &t, &t },  // or
-      { &f, &t, &t, &f }   // xor
+      {  f,  f,  f, &t },  // and
+      {  f, &t, &t, &t },  // or
+      {  f, &t, &t,  f }   // xor
     };
   const vector<vector<DdNode*>> pattern =
     {
@@ -66,8 +66,8 @@ void testBuildS()
   // initialize variables
   dd.top = &top;
   dd.t   = &t;
-  dd.f   = &f;
-  dd.var.resize( 2 );
+  dd.f   = f;
+  dd.var.resize( 2, { &t, f } );
 
   top.index = 0;
   fa.index  = 1;
@@ -78,6 +78,8 @@ void testBuildS()
   for( size_t i = 0 ; i < pattern.size() ; ++i )
   {
      DdNode *fs;
+     DdNode *sThenNode;
+     DdNode *sElseNode;
 
      // setup patterns
      fa.elseNode = pattern[i][0];
@@ -86,10 +88,18 @@ void testBuildS()
      fb.thenNode = pattern[i][3];
      // end setup patterns
 
-     fs = buildS( &dd, dd.top, s ); 
+     s->thenNode  = &t;
+     s->elseNode  = f;
+     fs           = buildS( &dd, dd.top, s ); 
+
+     if( Cudd_T( fs ) ) sThenNode = Cudd_T( fs );
+     if( Cudd_E( fs ) ) sElseNode = Cudd_E( fs );
 
      DdNode *y[] =
-       { Cudd_E( Cudd_E( fs ) ), Cudd_T( Cudd_E( fs ) ), Cudd_E( Cudd_T( fs ) ), Cudd_T( Cudd_T( fs ) )};
+       { ( ( Cudd_E( sElseNode ) ) ? Cudd_E( sElseNode ): sElseNode ),    // 00
+         ( ( Cudd_T( sElseNode ) ) ? Cudd_T( sElseNode ): sElseNode ),    // 01
+         ( ( Cudd_E( sThenNode ) ) ? Cudd_E( sThenNode ): sThenNode ),    // 10
+         ( ( Cudd_T( sThenNode ) ) ? Cudd_T( sThenNode ): sThenNode ) };  // 11
 
      bool expression = ( y[0] == correctResult[i][0] ) && // 00
                        ( y[1] == correctResult[i][1] ) && // 01
@@ -123,35 +133,36 @@ bool assert( bool expression, const string &errorTitle, const string &correctRes
 
 // abstract model
 // bdd model
+DdNode* Cudd_Regular( DdNode *node ) { return reinterpret_cast<DdNode*>( reinterpret_cast<long>( node ) & ~1 ); }
+bool Cudd_IsComplement( DdNode *node ) { return reinterpret_cast<long>( node ) & 1; }
 DdNode* Cudd_T( DdNode *node )
 {
-  node->thenNode->complement = node->thenC;
-  return node->thenNode;
+  DdNode *thenNode = Cudd_Regular( node )->thenNode;
+
+  if( !thenNode ) return nullptr;
+  return Cudd_IsComplement( node ) ? Cudd_Not( thenNode ): thenNode;
 }
 
 DdNode* Cudd_E( DdNode *node )
 {
-  node->elseNode->complement = node->elseC;
-  return node->elseNode;
+  DdNode *elseNode = Cudd_Regular( node )->elseNode;
+
+  if( !elseNode ) return nullptr;
+  return Cudd_IsComplement( node ) ? Cudd_Not( elseNode ): elseNode;
 }
 
-DdNode* Cudd_Not( DdNode *node )
-{
-  node->complement ^= true;
-  return node;
-}
-
+DdNode* Cudd_Not( DdNode *node ) { return reinterpret_cast<DdNode*>( reinterpret_cast<long>( node ) ^ 1 ); }
 int Cudd_SupportSize( DdManager *dd, DdNode *f )
 {
   DdNode  *node = f;
   int     size;
 
   for( size = 0 ; ( node != dd->t ) && ( node != dd->f ) ; ++size )
-     node = node->thenNode;
+     node = Cudd_Regular( node )->thenNode;
   return size;
 }
 
-unsigned int  Cudd_NodeReadIndex( DdNode *node          ) { return node->index; }
+unsigned int  Cudd_NodeReadIndex( DdNode *node          ) { return Cudd_Regular( node )->index; }
 int           Cudd_ReadPerm     ( DdManager *dd, int i  ) { return i;           }
 
 DdNode* Cudd_bddIthVar( DdManager *dd, int i ) 
@@ -163,19 +174,15 @@ DdNode* Cudd_bddIthVar( DdManager *dd, int i )
 DdNode* Cudd_bddAnd( DdManager *dd, DdNode *f, DdNode *g )
 {
   f->thenNode = g;
-  f->thenC    = false;
   f->elseNode = dd->f;
-  f->elseC    = false;
 
   return f;
 }
 
 DdNode* Cudd_bddXor( DdManager *dd, DdNode *f, DdNode *g )
 {
-  f->thenNode = g;
-  f->thenC    = true;
+  f->thenNode = Cudd_Not( g );
   f->elseNode = g;
-  f->elseC    = false;
 
   return f;
 }
@@ -183,9 +190,7 @@ DdNode* Cudd_bddXor( DdManager *dd, DdNode *f, DdNode *g )
 DdNode* Cudd_bddOr( DdManager *dd, DdNode *f, DdNode *g )
 {
   f->elseNode = g;
-  f->elseC    = false;
   f->thenNode = dd->t;
-  f->thenC    = false;
 
   return f;
 }
